@@ -81,8 +81,8 @@
   .tag-exp{background:var(--amber-dim);color:var(--amber);}
   .tag-oe{background:var(--accent-dim);color:var(--accent);}
   .del-btn,.edit-btn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;transition:color .15s;padding:2px 4px;}
-  .del-btn{color:#ddd;} .del-btn:hover{color:var(--accent);}
-  .edit-btn{color:#ddd;} .edit-btn:hover{color:#1e40af;}
+  .del-btn{color:#bbb;} .del-btn:hover{color:var(--accent);}
+  .edit-btn{color:#aaa;} .edit-btn:hover{color:#1e40af;}
   .io-bar{display:flex;gap:8px;align-items:center;background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:10px 16px;margin-bottom:20px;font-size:13px;color:var(--ink-light);}
   .empty{text-align:center;padding:40px;color:var(--ink-light);font-size:13px;}
   .err-msg{color:var(--accent);font-size:12px;margin-top:4px;min-height:16px;}
@@ -911,6 +911,16 @@
         </div>
       </div>
       <div class="form-row">
+        <div class="form-group w180">
+          <label>Entity Type</label>
+          <select id="client-entity-type" onchange="updateClientDetails();renderDirectorsTable();renderSoCE();" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
+            <option value="company">Company (Pty) Ltd / CC</option>
+            <option value="partnership">Partnership</option>
+            <option value="soleprop">Sole Proprietor</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group grow">
           <label>Client Address</label>
           <input type="text" id="client-address" placeholder="e.g. 50 Dinkin St, Beaufort West, 6970" oninput="updateClientDetails()">
@@ -1101,9 +1111,9 @@
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors & Shareholders</div>
+        <div class="afs-section-title" id="people-section-title">Directors &amp; Shareholders</div>
         <table class="directors-table" id="directors-table">
-          <thead><tr>
+          <thead id="directors-thead"><tr>
             <th style="width:28%">Full Name</th>
             <th style="width:20%">Capacity</th>
             <th style="width:18%">ID Number</th>
@@ -1113,11 +1123,11 @@
           </tr></thead>
           <tbody id="directors-body"></tbody>
         </table>
-        <button class="btn btn-ghost btn-sm no-print" onclick="addDirector()">+ Add Director / Shareholder</button>
+        <button class="btn btn-ghost btn-sm no-print" id="add-person-btn" onclick="addDirector()">+ Add Director / Shareholder</button>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Approval — Signing Details</div>
+        <div class="afs-section-title" id="approval-section-title">Directors' Approval — Signing Details</div>
         <div class="form-row">
           <div class="form-group grow">
             <label>Signing Director</label>
@@ -1135,32 +1145,32 @@
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Report — Nature of Business</div>
+        <div class="afs-section-title" id="report-section-title">Directors' Report — Nature of Business</div>
         <textarea class="afs-textarea" id="afs-nature" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Report — Share Capital</div>
+        <div class="afs-section-title" id="sharecap-section-title">Directors' Report — Share Capital</div>
         <textarea class="afs-textarea" id="afs-sharecap" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Report — Going Concern</div>
+        <div class="afs-section-title" id="goingconcern-section-title">Directors' Report — Going Concern</div>
         <textarea class="afs-textarea" id="afs-goingconcern" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Report — Events after Reporting Date</div>
+        <div class="afs-section-title" id="events-section-title">Directors' Report — Events after Reporting Date</div>
         <textarea class="afs-textarea" id="afs-events" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Report — Dividends</div>
+        <div class="afs-section-title" id="dividends-section-title">Directors' Report — Dividends</div>
         <textarea class="afs-textarea" id="afs-dividends" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Directors' Responsibilities & Approval — Body Text</div>
+        <div class="afs-section-title" id="responsibilities-section-title">Directors' Responsibilities & Approval — Body Text</div>
         <textarea class="afs-textarea tall" id="afs-responsibilities" oninput="updateAFS()"></textarea>
       </div>
 
@@ -2440,7 +2450,7 @@ function showView(id,btn){
   if(id==='cf')  {autoUpdateReportDate();renderCF();}
   if(id==='soce') {autoUpdateReportDate();renderSoCE();}
   if(id==='notes') renderNotes();
-  if(id==='afs') populateAFSForm();
+  if(id==='afs'){ populateAFSForm(); renderDirectorsTable(); }
   if(id==='settings') populateSettingsForm();
   if(id==='tbimport') renderTBImport();
   if(id==='cashbook') renderCashbookView();
@@ -2470,12 +2480,13 @@ function ensureClient(){
 
 function updateClientDetails(manualDateChange){
   ensureClient();
-  state.client.name    = document.getElementById('client-name').value;
-  state.client.reg     = document.getElementById('client-reg').value;
-  state.client.vatNo   = (document.getElementById('client-vatno')?.value||'').trim();
-  state.client.address = (document.getElementById('client-address')?.value||'').trim();
-  state.client.phone   = (document.getElementById('client-phone')?.value||'').trim();
-  state.client.email   = (document.getElementById('client-email')?.value||'').trim();
+  state.client.name       = document.getElementById('client-name').value;
+  state.client.reg        = document.getElementById('client-reg').value;
+  state.client.vatNo      = (document.getElementById('client-vatno')?.value||'').trim();
+  state.client.address    = (document.getElementById('client-address')?.value||'').trim();
+  state.client.phone      = (document.getElementById('client-phone')?.value||'').trim();
+  state.client.email      = (document.getElementById('client-email')?.value||'').trim();
+  state.client.entityType = (document.getElementById('client-entity-type')?.value||'company');
   state.client.priorYearDate = document.getElementById('client-prior-year-date').value;
   if(manualDateChange){
     state.client.reportDate = document.getElementById('client-report-date').value;
@@ -2492,6 +2503,7 @@ function renderClientDetails(){
   const adrEl = document.getElementById('client-address');   if(adrEl)  adrEl.value  = state.client.address||'';
   const phEl  = document.getElementById('client-phone');     if(phEl)   phEl.value   = state.client.phone||'';
   const emEl  = document.getElementById('client-email');     if(emEl)   emEl.value   = state.client.email||'';
+  const etEl  = document.getElementById('client-entity-type'); if(etEl) etEl.value  = state.client.entityType||'company';
   document.getElementById('client-report-date').value      = state.client.reportDate||'';
   document.getElementById('client-prior-year-date').value  = state.client.priorYearDate||'';
   updatePrintHeaders();
@@ -3616,18 +3628,10 @@ function renderSoCE(){
   const pyOpenLabel = hasPY ? openingLabel(state.client.priorYearDate) : 'Opening balance';
   const cyOpenLabel = hasPY ? openingLabel(state.client.reportDate)    : 'Opening balance';
 
-  // Equity component balances
-  const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
-  let cyShareCap=0, cyRetained=0, pyShareCap=0, pyRetained=0;
-  eqAccts.forEach(a=>{
-    const cyNet = cy[a.name].cr - cy[a.name].dr;
-    const pyNet = py[a.name].cr - py[a.name].dr;
-    const isShareCap = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member');
-    if(isShareCap){ cyShareCap+=cyNet; pyShareCap+=pyNet; }
-    else          { cyRetained+=cyNet; pyRetained+=pyNet; }
-  });
+  const soceET = (state&&state.client&&state.client.entityType)||'company';
+  const soceT  = _entityTerms();
 
-  // P&L profits
+  // P&L profits (used by all entity types)
   let cyInc=0,cyExp=0,pyInc=0,pyExp=0;
   state.accounts.filter(a=>a.cat==='Income'||a.cat==='Other Income').forEach(a=>{
     cyInc+=cy[a.name].cr-cy[a.name].dr; pyInc+=py[a.name].cr-py[a.name].dr;
@@ -3638,71 +3642,136 @@ function renderSoCE(){
   const cyProfit = cyInc-cyExp;
   const pyProfit = pyInc-pyExp;
 
-  // For QBO/Sage imports, the Retained Earnings account balance represents the
-  // opening balance for that year (before the year's profit is closed in).
-  // Profit must always be added to get the true closing retained earnings.
-  const pyClosRet = pyRetained + pyProfit;
-  const cyOpenRet = pyClosRet;
-  const cyClosRet = cyRetained + cyProfit;
+  if(soceET==='partnership'){
+    // ── Partnership: one column per Equity account ──
+    const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
+    // cols = label + one per equity account + total
+    const cols = 1 + eqAccts.length + 1;
+    function nc(v,bold){ const s=bold?' style="font-weight:700"':''; return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`; }
+    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
+    function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
+    function sectionLabel(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
+    function spacer(){ return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`; }
 
-  // PY opening retained = pyClosRet - pyProfit
-  const pyOpenRet = pyClosRet - pyProfit;
+    // Headers: one column per equity account
+    html += `<tr>${labelTh()}${eqAccts.map(a=>th(a.name.replace(/—/g,'<br>').replace(/ /g,'&nbsp;')+'<br><span style="font-weight:400">R</span>')).join('')}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
 
-  // Share capital — assumed unchanged; opening = closing for both years
-  const pyOpenSC = pyShareCap, pyClosSC = pyShareCap;
-  const cyOpenSC = pyShareCap, cyClosSC = cyShareCap;
+    function partnerBalanceRow(label, cyVals, bold){
+      const tot = cyVals.reduce((s,v)=>s+v,0);
+      const b = bold ? ' style="font-weight:700"' : '';
+      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
+        +cyVals.map(v=>nc(v,bold)).join('')
+        +nc(tot,bold)
+        +`</tr>`;
+    }
+    function partnerProfitRow(cyVals){
+      const tot = cyVals.reduce((s,v)=>s+v,0);
+      return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
+        +cyVals.map(v=>nc(v)).join('')
+        +nc(tot)
+        +`</tr>`;
+    }
 
-  const showSC = Math.abs(cyShareCap)>=0.005||Math.abs(pyShareCap)>=0.005;
-  const cols   = showSC ? 4 : 3; // description + [share cap] + retained + total
+    // Compute balances per equity account
+    function getVals(balObj){ return eqAccts.map(a=>{ const b=balObj[a.name]; return (b?b.cr-b.dr:0); }); }
 
-  // Helpers
-  function nc(v,bold){
-    const s = bold ? ' style="font-weight:700"' : '';
-    return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`;
+    if(hasPY){
+      // PY opening = PY closing - PY profit distributed proportionally to retained-earnings-like accounts
+      // Simple approach: PY opening per account = PY closing balance - PY profit (allocated to non-share-cap accounts)
+      const pyClosVals = getVals(py);
+      const pyOpenVals = pyClosVals.map((v,i)=>{
+        const a = eqAccts[i];
+        const isCapital = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
+        return isCapital ? v : v - pyProfit/Math.max(1, eqAccts.filter(x=>!x.name.toLowerCase().includes('share')&&!x.name.toLowerCase().includes('member')&&!x.name.toLowerCase().includes('capital')).length);
+      });
+      const pyProfitVals = eqAccts.map(()=>0); pyProfitVals[Math.max(0,eqAccts.length-1)] = pyProfit;
+      html += sectionLabel('Year ended '+pyYear);
+      html += partnerBalanceRow('Balance at '+pyOpenLabel, pyOpenVals, true);
+      html += partnerProfitRow(pyProfitVals);
+      html += partnerBalanceRow('Balance at '+pyYear, pyClosVals, true);
+      html += spacer();
+    }
+    const cyClosVals = getVals(cy).map((v,i)=>{
+      const a=eqAccts[i];
+      const isCapital=a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
+      return isCapital ? v : v+cyProfit;
+    });
+    const pyClosVals2 = getVals(py);
+    const cyOpenVals = pyClosVals2.map((v,i)=>{
+      const a=eqAccts[i];
+      const isCapital=a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
+      return isCapital ? v : v+pyProfit;
+    });
+    const cyProfitVals = eqAccts.map(()=>0); cyProfitVals[Math.max(0,eqAccts.length-1)] = cyProfit;
+    html += sectionLabel('Year ended '+cyYear);
+    html += partnerBalanceRow('Balance at '+cyOpenLabel, cyOpenVals, true);
+    html += partnerProfitRow(cyProfitVals);
+    html += partnerBalanceRow('Balance at '+cyYear, cyClosVals, true);
+
+  } else {
+    // ── Company / Sole Prop: original 2-column layout ──
+    const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
+    let cyShareCap=0, cyRetained=0, pyShareCap=0, pyRetained=0;
+    eqAccts.forEach(a=>{
+      const cyNet = cy[a.name].cr - cy[a.name].dr;
+      const pyNet = py[a.name].cr - py[a.name].dr;
+      const isShareCap = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member');
+      if(isShareCap){ cyShareCap+=cyNet; pyShareCap+=pyNet; }
+      else          { cyRetained+=cyNet; pyRetained+=pyNet; }
+    });
+
+    const pyClosRet = pyRetained + pyProfit;
+    const cyOpenRet = pyClosRet;
+    const cyClosRet = cyRetained + cyProfit;
+    const pyOpenRet = pyClosRet - pyProfit;
+    const pyOpenSC = pyShareCap, pyClosSC = pyShareCap;
+    const cyOpenSC = pyShareCap, cyClosSC = cyShareCap;
+
+    const showSC = Math.abs(cyShareCap)>=0.005||Math.abs(pyShareCap)>=0.005;
+    const cols   = showSC ? 4 : 3;
+
+    function nc(v,bold){ const s=bold?' style="font-weight:700"':''; return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`; }
+    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
+    function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
+    function sectionLabel(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
+    function balanceRow(label, sc, ret, bold){
+      const tot = sc+ret;
+      const b = bold ? ' style="font-weight:700"' : '';
+      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
+        +(showSC ? nc(sc,bold) : '')
+        +nc(ret,bold)
+        +nc(tot,bold)
+        +`</tr>`;
+    }
+    function profitRow(sc, ret){
+      const tot = sc+ret;
+      return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
+        +(showSC ? nc(sc) : '')
+        +nc(ret)
+        +nc(tot)
+        +`</tr>`;
+    }
+    function spacer(){ return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`; }
+
+    // Column header labels depend on entity type
+    const scLabel = soceET==='soleprop' ? "Owner's<br>Capital<br><span style='font-weight:400'>R</span>"
+      : "Share Capital<br><span style='font-weight:400'>R</span>";
+    const retLabel = soceET==='soleprop' ? "Retained<br>Earnings<br><span style='font-weight:400'>R</span>"
+      : "Retained<br>Earnings<br><span style='font-weight:400'>R</span>";
+    html += `<tr>${labelTh()}${showSC?th(scLabel):''}${th(retLabel)}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
+
+    if(hasPY){
+      html += sectionLabel('Year ended '+pyYear);
+      html += balanceRow('Balance at '+pyOpenLabel, pyOpenSC, pyOpenRet, true);
+      html += profitRow(0, pyProfit);
+      html += balanceRow('Balance at '+pyYear, pyClosSC, pyClosRet, true);
+      html += spacer();
+    }
+    html += sectionLabel('Year ended '+cyYear);
+    html += balanceRow('Balance at '+cyOpenLabel, cyOpenSC, cyOpenRet, true);
+    html += profitRow(0, cyProfit);
+    html += balanceRow('Balance at '+cyYear, cyClosSC, cyClosRet, true);
   }
-  function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
-  function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
-  function sectionLabel(txt){
-    return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`;
-  }
-  function balanceRow(label, sc, ret, bold){
-    const tot = sc+ret;
-    const b = bold ? ' style="font-weight:700"' : '';
-    return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
-      +(showSC ? nc(sc,bold) : '')
-      +nc(ret,bold)
-      +nc(tot,bold)
-      +`</tr>`;
-  }
-  function profitRow(sc, ret){
-    const tot = sc+ret;
-    return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
-      +(showSC ? nc(sc) : '')
-      +nc(ret)
-      +nc(tot)
-      +`</tr>`;
-  }
-  function spacer(){
-    return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`;
-  }
-
-  // Column headers
-  html += `<tr>${labelTh()}${showSC?th('Share Capital<br><span style="font-weight:400">R</span>'):''}${th('Retained<br>Earnings<br><span style="font-weight:400">R</span>')}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
-
-  // ── PY block ──
-  if(hasPY){
-    html += sectionLabel('Year ended '+pyYear);
-    html += balanceRow('Balance at '+pyOpenLabel, pyOpenSC, pyOpenRet, true);
-    html += profitRow(0, pyProfit);
-    html += balanceRow('Balance at '+pyYear, pyClosSC, pyClosRet, true);
-    html += spacer();
-  }
-
-  // ── CY block ──
-  html += sectionLabel('Year ended '+cyYear);
-  html += balanceRow('Balance at '+cyOpenLabel, cyOpenSC, cyOpenRet, true);
-  html += profitRow(0, cyProfit);
-  html += balanceRow('Balance at '+cyYear, cyClosSC, cyClosRet, true);
 
   table.innerHTML = html;
   const pd = document.getElementById('soce-print-date');
@@ -5044,7 +5113,7 @@ function _shlRowNarrative(r){
 
   if(!r.hasFormalAgreement){
     // Default — no formal agreement, simplest safe disclosure
-    return `The loan ${direction} ${name} is unsecured, bears no interest and has no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loan is classified as a non-current ${isAsset?'asset':'liability'}.`;
+    return _adaptText(`The loan ${direction} ${name} is unsecured, bears no interest and has no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loan is classified as a non-current ${isAsset?'asset':'liability'}.`);
   }
 
   // Formal agreement — build from components
@@ -5074,7 +5143,7 @@ function _shlGenerateNarrative(rows){
     const classification = hasLiab ? 'non-current liabilities' : 'non-current assets';
 
     if(!r0.hasFormalAgreement){
-      return `The loans are unsecured, bear no interest and have no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loans are classified as ${classification}.`;
+      return _adaptText(`The loans are unsecured, bear no interest and have no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loans are classified as ${classification}.`);
     }
     const security = r0.isSecured ? 'secured' : 'unsecured';
     const interest = r0.hasInterest && r0.interestRate
@@ -5717,17 +5786,125 @@ function renderTaxNote(note, i, container){
 const _BOP_COMPILATION = 'These statements are unaudited and unreviewed.';
 const _BOP_REVIEW      = 'These statements are reviewed but not audited.';
 
+// ── Entity type terminology ────────────────────────────────────────────────
+function _entityTerms(){
+  const et = (state&&state.client&&state.client.entityType)||'company';
+  if(et==='partnership') return {
+    roleP:        'partners',
+    roleS:        'partner',
+    rolePCap:     'Partners',
+    roleSCap:     'Partner',
+    reportTitle:  "Partners' Report",
+    respTitle:    "Partners' Responsibilities and Approval",
+    equityLabel:  "Partners' Capital",
+    capitalSection:'Partners\' Capital',
+    toThe:        'Partners',
+    entityNoun:   'partnership',
+    entityNounCap:'Partnership',
+  };
+  if(et==='soleprop') return {
+    roleP:        'proprietor',
+    roleS:        'proprietor',
+    rolePCap:     'Proprietor',
+    roleSCap:     'Proprietor',
+    reportTitle:  "Proprietor's Report",
+    respTitle:    "Proprietor's Responsibilities and Approval",
+    equityLabel:  "Owner's Capital",
+    capitalSection:"Owner's Capital",
+    toThe:        'Proprietor',
+    entityNoun:   'sole proprietorship',
+    entityNounCap:'Sole Proprietorship',
+  };
+  // default: company
+  return {
+    roleP:        'directors',
+    roleS:        'director',
+    rolePCap:     'Directors',
+    roleSCap:     'Director',
+    reportTitle:  "Directors' Report",
+    respTitle:    "Directors' Responsibilities and Approval",
+    equityLabel:  "Share Capital / Members Interest",
+    capitalSection:'Share Capital',
+    toThe:        'Directors',
+    entityNoun:   'company',
+    entityNounCap:'Company',
+  };
+}
+
+// Adapt stored boilerplate (always written in company/directors form) to the
+// current entity type at render time. Never modifies stored state.
+function _adaptText(txt){
+  if(!txt) return txt;
+  const et = (state&&state.client&&state.client.entityType)||'company';
+  if(et==='company') return txt; // no change needed
+  const t = _entityTerms();
+  return txt
+    // Specific multi-word phrases first (longest match wins)
+    .replace(/\bboard of directors\b/gi,                    t.roleS)
+    .replace(/\bDirectors' Responsibilities and Approval\b/g, t.respTitle)
+    .replace(/\bDirectors' Responsibilities\b/g,            t.rolePCap+"' Responsibilities")
+    .replace(/\bDirectors' Report\b/g,                      t.reportTitle)
+    .replace(/\bDirector's Report\b/g,                      t.reportTitle)
+    .replace(/\bthe directors of the company\b/gi,          'the '+t.roleP+' of the '+t.entityNoun)
+    .replace(/\bThe directors have reviewed\b/g,            'The '+t.rolePCap+' have reviewed')
+    .replace(/\bthe directors have a reasonable\b/g,        'the '+t.roleP+' have a reasonable')
+    .replace(/\bthe directors have no reason\b/g,           'the '+t.roleP+' have no reason')
+    .replace(/\bThe directors are also responsible\b/g,     'The '+t.rolePCap+' are also responsible')
+    .replace(/\bThe directors are responsible\b/g,          'The '+t.rolePCap+' are responsible')
+    .replace(/\bThe directors are not aware\b/g,            'The '+t.rolePCap+' are not aware')
+    .replace(/\bthe directors are\b/gi,                     'the '+t.roleP+' are')
+    .replace(/\bthe directors\b/gi,                         'the '+t.roleP)
+    .replace(/\bThe directors\b/g,                          'The '+t.rolePCap)
+    // Singular director
+    .replace(/\bThe director has reviewed\b/g,              'The '+t.roleSCap+' has reviewed')
+    .replace(/\bthe director has a reasonable\b/g,          'the '+t.roleS+' has a reasonable')
+    .replace(/\bthe director has no reason\b/g,             'the '+t.roleS+' has no reason')
+    .replace(/\bThe director is also responsible\b/g,       'The '+t.roleSCap+' is also responsible')
+    .replace(/\bThe director is responsible\b/g,            'The '+t.roleSCap+' is responsible')
+    .replace(/\bThe director is not aware\b/g,              'The '+t.roleSCap+' is not aware')
+    .replace(/\bthe director is\b/gi,                       'the '+t.roleS+' is')
+    .replace(/\bthe director\b/gi,                          'the '+t.roleS)
+    .replace(/\bThe director\b/g,                           'The '+t.roleSCap)
+    // Remaining bare words
+    .replace(/\bDirectors\b/g,                              t.rolePCap)
+    .replace(/\bdirectors\b/g,                              t.roleP)
+    .replace(/\bDirector\b/g,                               t.roleSCap)
+    .replace(/\bdirector\b/g,                               t.roleS)
+    // Company → entity noun
+    .replace(/\bthe company's\b/gi,                         'the '+t.entityNoun+"'s")
+    .replace(/\bthe company\b/gi,                           'the '+t.entityNoun)
+    // Share Capital / dividends section labels
+    .replace(/\bShare Capital\b/g,                          t.capitalSection)
+    .replace(/\bdividends\b/gi, et==='partnership'||et==='soleprop' ? 'distributions' : 'dividends');
+}
+
 function afsDefaults(clientName, periodEnd){
   const cn = clientName || '{clientName}';
   const pe = periodEnd   || '{periodEnd}';
   const isReview = (state&&state.afs&&state.afs.engagementType)==='review';
   const bopStmt  = isReview ? _BOP_REVIEW : _BOP_COMPILATION;
+  const et = (state&&state.client&&state.client.entityType)||'company';
+  const natureDefault = et==='partnership'
+    ? cn+' is a partnership registered and operating in the Republic of South Africa. The principal business of the partnership is [describe nature of business]. There has been no change in the nature of the business during the year under review.'
+    : et==='soleprop'
+    ? cn+' is a sole proprietorship operating in the Republic of South Africa. The principal business of the proprietorship is [describe nature of business]. There has been no change in the nature of the business during the year under review.'
+    : cn+' is a private company incorporated and domiciled in the Republic of South Africa. The principal business of the company is [describe nature of business]. There has been no change in the nature of the business of the company during the year under review.';
+  const sharecapDefault = et==='partnership'
+    ? 'The partnership capital comprises the individual capital contributions of the partners as reflected in the Statement of Changes in Equity.'
+    : et==='soleprop'
+    ? "The owner's capital comprises the proprietor's contributions and accumulated retained profits as reflected in the Statement of Changes in Equity."
+    : 'The company is authorised to issue ordinary shares with no par value. At the financial year end, [X] ordinary shares had been issued and are fully paid up.';
+  const dividendsDefault = et==='partnership'
+    ? 'No distributions were made to partners during the year under review.'
+    : et==='soleprop'
+    ? 'No drawings were taken by the proprietor during the year under review (other than as reflected in the equity accounts).'
+    : 'No dividends were declared or paid during the year under review.';
   return {
-    nature: cn + " is a private company incorporated and domiciled in the Republic of South Africa. The principal business of the company is [describe nature of business]. There has been no change in the nature of the business of the company during the year under review.",
-    sharecap: 'The company is authorised to issue ordinary shares with no par value. At the financial year end, [X] ordinary shares had been issued and are fully paid up.',
+    nature: natureDefault,
+    sharecap: sharecapDefault,
     goingconcern: "The directors have reviewed the company's financial position and cash flows for the year under review. Based on this review, and having made appropriate enquiries, the directors have a reasonable expectation that the company has adequate resources to continue in operational existence for the foreseeable future. The annual financial statements have accordingly been prepared on the going concern basis.",
     events: 'The directors are not aware of any material events which occurred after the reporting date and up to the date of this report that would require adjustment to, or disclosure in, the annual financial statements.',
-    dividends: 'No dividends were declared or paid during the year under review.',
+    dividends: dividendsDefault,
     responsibilities: 'The directors are responsible for the preparation and fair presentation of the annual financial statements. The directors are also responsible for such internal controls as they determine necessary to enable the preparation of financial statements that are free from material misstatement.\n\nThese annual financial statements have been prepared on the going concern basis and the directors have no reason to believe that the company will not be a going concern in the foreseeable future.\n\nThe annual financial statements set out on the following pages were approved by the board of directors and are signed on its behalf by:',
     policies: 'The annual financial statements have been prepared on the historical cost basis, in accordance with the accounting policies set out below, which have been consistently applied throughout the current and prior year.\n\nBASIS OF PREPARATION\nThese financial statements have been compiled for the purpose of income tax submission and financial reporting to stakeholders. These statements are unaudited and unreviewed.\n\nREVENUE RECOGNITION\nRevenue comprises the fair value of consideration received or receivable for services rendered and goods sold in the ordinary course of business, net of value-added tax, rebates and discounts.\n\nPROPERTY, PLANT AND EQUIPMENT\nProperty, plant and equipment are stated at cost less accumulated depreciation and impairment losses. Depreciation is calculated on the straight-line basis at rates considered appropriate to reduce the carrying amount of each asset to its estimated residual value over its useful life.\n\nTRADE RECEIVABLES\nTrade receivables are measured at amortised cost less expected credit loss provisions.\n\nACCOUNTS PAYABLE\nAccounts payable are stated at cost.\n\nTAXATION\nThe taxation charge for the year comprises current tax. Current income tax is calculated on the basis of the tax laws enacted or substantively enacted at the reporting date.'
   };
@@ -6094,10 +6271,12 @@ function toggleDraft(on){
   document.body.classList.toggle('show-draft', on);
 }
 
-// ── Directors table ────────────────────────────────────────────────────────
+// ── Directors / Partners / Proprietor table ────────────────────────────────
 function addDirector(){
   ensureAFS();
-  state.afs.directors.push({name:'',capacity:'Director & Shareholder',idno:'',shares:'',pct:''});
+  const et = (state&&state.client&&state.client.entityType)||'company';
+  const defCap = et==='partnership' ? 'Partner' : et==='soleprop' ? 'Proprietor' : 'Director & Shareholder';
+  state.afs.directors.push({name:'',capacity:defCap,idno:'',shares:'',pct:''});
   renderDirectorsTable();
 }
 function delDirector(i){
@@ -6108,23 +6287,96 @@ function renderDirectorsTable(){
   ensureAFS();
   const tbody = document.getElementById('directors-body');
   if(!tbody) return;
+  const et = (state&&state.client&&state.client.entityType)||'company';
+  const t  = _entityTerms();
+
+  // Update AFS settings section labels to reflect entity type
+  const secTitle = document.getElementById('people-section-title');
+  if(secTitle) secTitle.textContent =
+    et==='partnership' ? 'Partners' :
+    et==='soleprop'    ? 'Proprietor' :
+    'Directors & Shareholders';
+
+  const addBtn = document.getElementById('add-person-btn');
+  if(addBtn) addBtn.textContent =
+    et==='partnership' ? '+ Add Partner' :
+    et==='soleprop'    ? '+ Add Proprietor' :
+    '+ Add Director / Shareholder';
+
+  const approvalTitle = document.getElementById('approval-section-title');
+  if(approvalTitle) approvalTitle.textContent =
+    et==='partnership' ? "Partners' Approval — Signing Details" :
+    et==='soleprop'    ? "Proprietor's Approval — Signing Details" :
+    "Directors' Approval — Signing Details";
+
+  const rpt = t.reportTitle;
+  const reportTitle = document.getElementById('report-section-title');
+  if(reportTitle) reportTitle.textContent = rpt+' — Nature of Business';
+
+  const capTitle = document.getElementById('sharecap-section-title');
+  if(capTitle) capTitle.textContent = rpt+' — '+t.capitalSection;
+
+  const gcTitle = document.getElementById('goingconcern-section-title');
+  if(gcTitle) gcTitle.textContent = rpt+' — Going Concern';
+
+  const evTitle = document.getElementById('events-section-title');
+  if(evTitle) evTitle.textContent = rpt+' — Events after Reporting Date';
+
+  const divTitle = document.getElementById('dividends-section-title');
+  if(divTitle) divTitle.textContent = rpt+' — '+(et==='company'?'Dividends':'Distributions / Drawings');
+
+  const respTitle = document.getElementById('responsibilities-section-title');
+  if(respTitle) respTitle.textContent = t.respTitle+' — Body Text';
+
+  // Table header
+  const thead = document.getElementById('directors-thead');
+  if(thead){
+    if(et==='partnership'){
+      thead.innerHTML = '<tr><th style="width:34%">Full Name</th><th style="width:22%">ID Number</th><th style="width:16%">% Interest</th><th style="width:36px" class="no-print"></th></tr>';
+    } else if(et==='soleprop'){
+      thead.innerHTML = '<tr><th style="width:50%">Full Name</th><th style="width:30%">ID Number</th><th style="width:36px" class="no-print"></th></tr>';
+    } else {
+      thead.innerHTML = '<tr><th style="width:28%">Full Name</th><th style="width:20%">Capacity</th><th style="width:18%">ID Number</th><th style="width:12%">Shares Held</th><th style="width:12%">% Interest</th><th style="width:36px" class="no-print"></th></tr>';
+    }
+  }
+
   tbody.innerHTML = '';
   const caps = ['Director','Shareholder','Director & Shareholder','Director only'];
   state.afs.directors.forEach((d,i)=>{
-    const capOpts = caps.map(c=>`<option value="${c}" ${c===d.capacity?'selected':''}>${c}</option>`).join('');
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
-        oninput="state.afs.directors[${i}].name=this.value"></td>
-      <td><select oninput="state.afs.directors[${i}].capacity=this.value">${capOpts}</select></td>
-      <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
-        oninput="state.afs.directors[${i}].idno=this.value"></td>
-      <td><input value="${(d.shares||'').replace(/"/g,'&quot;')}" placeholder="0"
-        oninput="state.afs.directors[${i}].shares=this.value"></td>
-      <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="100%"
-        oninput="state.afs.directors[${i}].pct=this.value"></td>
-      <td class="no-print" style="text-align:right">
-        <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
+    if(et==='partnership'){
+      tr.innerHTML = `
+        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
+          oninput="state.afs.directors[${i}].name=this.value"></td>
+        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
+          oninput="state.afs.directors[${i}].idno=this.value"></td>
+        <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="50%"
+          oninput="state.afs.directors[${i}].pct=this.value"></td>
+        <td class="no-print" style="text-align:right">
+          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
+    } else if(et==='soleprop'){
+      tr.innerHTML = `
+        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
+          oninput="state.afs.directors[${i}].name=this.value"></td>
+        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
+          oninput="state.afs.directors[${i}].idno=this.value"></td>
+        <td class="no-print" style="text-align:right">
+          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
+    } else {
+      const capOpts = caps.map(c=>`<option value="${c}" ${c===d.capacity?'selected':''}>${c}</option>`).join('');
+      tr.innerHTML = `
+        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
+          oninput="state.afs.directors[${i}].name=this.value"></td>
+        <td><select oninput="state.afs.directors[${i}].capacity=this.value">${capOpts}</select></td>
+        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
+          oninput="state.afs.directors[${i}].idno=this.value"></td>
+        <td><input value="${(d.shares||'').replace(/"/g,'&quot;')}" placeholder="0"
+          oninput="state.afs.directors[${i}].shares=this.value"></td>
+        <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="100%"
+          oninput="state.afs.directors[${i}].pct=this.value"></td>
+        <td class="no-print" style="text-align:right">
+          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
+    }
     tbody.appendChild(tr);
   });
 }
@@ -6152,29 +6404,45 @@ function printFullAFS(){
       .replace(/\{signDate\}/g,   state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]');
   }
 
-  // ── Director/Directors pluralisation ──
-  // Count persons listed with a director capacity. Applied at render time only —
-  // stored boilerplate always uses plural so it reads naturally in the edit fields.
-  const directorCount = (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director')).length;
+  // ── Entity type terms + combined adapt function ──
+  const _et  = _entityTerms();
+  const _etCode = (state&&state.client&&state.client.entityType)||'company';
+
+  // Count named people. For company: count directors. For others: count all named rows.
+  const directorCount = _etCode==='company'
+    ? (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director')).length
+    : (state.afs.directors||[]).filter(d=>d.name).length;
   const isSingleDirector = directorCount === 1;
 
-  // Apply singular/plural substitutions to rendered text.
-  // Replacements are ordered longest-first to avoid partial matches.
+  // Combined: entity-type adaptation + director count pluralisation.
+  // _adaptText handles company→partner/proprietor; then pluralise handles plural→singular for single person.
   function pluralise(txt){
-    if(!txt || !isSingleDirector) return txt;
-    return txt
-      .replace(/\bboard of directors\b/gi,            'director')
-      .replace(/\bThe directors have reviewed\b/g,    'The director has reviewed')
-      .replace(/\bthe directors have a reasonable\b/g,'the director has a reasonable')
-      .replace(/\bthe directors have no reason\b/g,   'the director has no reason')
-      .replace(/\bThe directors are also responsible\b/g,'The director is also responsible')
-      .replace(/\bThe directors are responsible\b/g,  'The director is responsible')
-      .replace(/\bThe directors are not aware\b/g,    'The director is not aware')
-      .replace(/\bthe directors are\b/gi,             'the director is')
-      .replace(/\bthe directors\b/gi,                 'the director')
-      .replace(/\bDirectors'\s+Report\b/g,            "Director's Report")
-      .replace(/\bDirectors'\s+Responsibilities\b/g,  "Director's Responsibilities")
-      .replace(/\bdirectors\b/g,                      'director');
+    // First adapt to entity type
+    let t = _adaptText(txt);
+    if(!t) return t;
+    // Then apply singular if only one person
+    if(!isSingleDirector) return t;
+    const role = _et.roleP; // e.g. 'directors', 'partners', 'proprietor'
+    const roleS = _et.roleS;
+    const rolePC = _et.rolePCap;
+    const roleSC = _et.roleSCap;
+    // For sole prop, roleP===roleS already, so no change needed
+    if(role===roleS) return t;
+    return t
+      .replace(new RegExp('\\bboard of '+role+'\\b','gi'), roleS)
+      .replace(new RegExp('\\bThe '+rolePC+' have reviewed\\b','g'), 'The '+roleSC+' has reviewed')
+      .replace(new RegExp('\\bthe '+role+' have a reasonable\\b','g'), 'the '+roleS+' has a reasonable')
+      .replace(new RegExp('\\bthe '+role+' have no reason\\b','g'), 'the '+roleS+' has no reason')
+      .replace(new RegExp('\\bThe '+rolePC+' are also responsible\\b','g'), 'The '+roleSC+' is also responsible')
+      .replace(new RegExp('\\bThe '+rolePC+' are responsible\\b','g'), 'The '+roleSC+' is responsible')
+      .replace(new RegExp('\\bThe '+rolePC+' are not aware\\b','g'), 'The '+roleSC+' is not aware')
+      .replace(new RegExp('\\bthe '+role+' are\\b','gi'), 'the '+roleS+' is')
+      .replace(new RegExp('\\bthe '+role+'\\b','gi'), 'the '+roleS)
+      .replace(new RegExp('\\bThe '+rolePC+'\\b','g'), 'The '+roleSC)
+      .replace(new RegExp("\\b"+rolePC+"'\\s+Report\\b",'g'), roleSC+"'s Report")
+      .replace(new RegExp("\\b"+rolePC+"'\\s+Responsibilities\\b",'g'), roleSC+"'s Responsibilities")
+      .replace(new RegExp('\\b'+role+'\\b','g'), roleS)
+      .replace(new RegExp('\\b'+rolePC+'\\b','g'), roleSC);
   }
 
   // ── Cover ──
@@ -6209,8 +6477,8 @@ function printFullAFS(){
 
   // ── Index ──
   const indexItems = [
-    [pluralise("Directors' Report"), ''],
-    [pluralise("Directors' Responsibilities and Approval"), ''],
+    [pluralise(_et.reportTitle), ''],
+    [pluralise(_et.respTitle), ''],
     [isReview ? 'Independent Review Report' : 'Independent Preparation Report', ''],
     ['Accounting Policies', ''],
     ['Statement of Financial Position', ''],
@@ -6226,72 +6494,107 @@ function printFullAFS(){
       ${indexItems.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
     </table>`;
 
-  // ── Directors' Report ──
+  // ── Directors' / Partners' / Proprietor's Report ──
   ensureAFS();
   const dirs = state.afs.directors||[];
   let dirTable = '';
   if(dirs.length){
-    dirTable = `<div class="afs-print-section-title">Directors and Shareholders</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
-      <thead><tr style="border-bottom:2px solid var(--rule)">
-        <th style="text-align:left;padding:4px 6px">Name</th>
-        <th style="text-align:left;padding:4px 6px">Capacity</th>
-        <th style="text-align:left;padding:4px 6px">ID Number</th>
-        <th style="text-align:right;padding:4px 6px">Shares</th>
-        <th style="text-align:right;padding:4px 6px">Interest</th>
-      </tr></thead>
-      <tbody>${dirs.map(d=>`<tr style="border-bottom:1px solid var(--rule)">
+    // Build people table header and rows based on entity type
+    const pTableHead = _etCode==='partnership'
+      ? `<tr style="border-bottom:2px solid var(--rule)">
+          <th style="text-align:left;padding:4px 6px">Name</th>
+          <th style="text-align:left;padding:4px 6px">ID Number</th>
+          <th style="text-align:right;padding:4px 6px">% Interest</th>
+         </tr>`
+      : _etCode==='soleprop'
+      ? `<tr style="border-bottom:2px solid var(--rule)">
+          <th style="text-align:left;padding:4px 6px">Name</th>
+          <th style="text-align:left;padding:4px 6px">ID Number</th>
+         </tr>`
+      : `<tr style="border-bottom:2px solid var(--rule)">
+          <th style="text-align:left;padding:4px 6px">Name</th>
+          <th style="text-align:left;padding:4px 6px">Capacity</th>
+          <th style="text-align:left;padding:4px 6px">ID Number</th>
+          <th style="text-align:right;padding:4px 6px">Shares</th>
+          <th style="text-align:right;padding:4px 6px">Interest</th>
+         </tr>`;
+    const pTableRows = dirs.map(d=>{
+      if(_etCode==='partnership') return `<tr style="border-bottom:1px solid var(--rule)">
+        <td style="padding:4px 6px">${d.name||''}</td>
+        <td style="padding:4px 6px">${d.idno||''}</td>
+        <td style="padding:4px 6px;text-align:right">${d.pct||''}</td>
+      </tr>`;
+      if(_etCode==='soleprop') return `<tr style="border-bottom:1px solid var(--rule)">
+        <td style="padding:4px 6px">${d.name||''}</td>
+        <td style="padding:4px 6px">${d.idno||''}</td>
+      </tr>`;
+      return `<tr style="border-bottom:1px solid var(--rule)">
         <td style="padding:4px 6px">${d.name||''}</td>
         <td style="padding:4px 6px">${d.capacity||''}</td>
         <td style="padding:4px 6px">${d.idno||''}</td>
         <td style="padding:4px 6px;text-align:right">${d.shares||''}</td>
         <td style="padding:4px 6px;text-align:right">${d.pct||''}</td>
-      </tr>`).join('')}</tbody>
+      </tr>`;
+    }).join('');
+    const pSectionLabel = _etCode==='partnership' ? 'Partners'
+      : _etCode==='soleprop' ? 'Proprietor'
+      : 'Directors and Shareholders';
+    dirTable = `<div class="afs-print-section-title">${pSectionLabel}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+      <thead>${pTableHead}</thead>
+      <tbody>${pTableRows}</tbody>
     </table>`;
   }
+  const divDistLabel = _etCode==='company' ? 'Dividends'
+    : _etCode==='partnership' ? 'Distributions'
+    : 'Drawings';
   document.getElementById('print-directors-report').innerHTML = `
-    <div class="afs-print-heading">${pluralise("Directors' Report")}</div>
+    <div class="afs-print-heading">${pluralise(_et.reportTitle)}</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
     <div class="afs-print-section-title">Nature of Business</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('nature')))}</div>
-    <div class="afs-print-section-title">Share Capital</div>
+    <div class="afs-print-section-title">${_et.capitalSection}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('sharecap')))}</div>
     ${dirTable}
     <div class="afs-print-section-title">Going Concern</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('goingconcern')))}</div>
     <div class="afs-print-section-title">Events after Reporting Date</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('events')))}</div>
-    <div class="afs-print-section-title">Dividends</div>
+    <div class="afs-print-section-title">${divDistLabel}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('dividends')))}</div>`;
 
-  // ── Directors' Responsibilities ──
+  // ── Responsibilities & Approval ──
   const sigDate  = state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]';
   const sigPlace = state.afs.signingPlace || '[place]';
-  // Build signature blocks for all directors (or fall back to single signing director)
-  const sigDirs = (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director'));
-  const sigBlocks = sigDirs.length > 0
-    ? sigDirs.map(d=>`
+  // For company: only directors sign. For partnership: all named partners sign. For sole prop: proprietor signs.
+  const sigPeople = _etCode==='company'
+    ? (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director'))
+    : (state.afs.directors||[]).filter(d=>d.name);
+  const roleLabel = _etCode==='company' ? 'Director' : _etCode==='partnership' ? 'Partner' : 'Proprietor';
+  const sigBlocks = sigPeople.length > 0
+    ? sigPeople.map(d=>`
         <div class="sig-block" style="display:inline-block;min-width:220px;margin-right:40px;margin-top:32px;vertical-align:top">
           <div class="sig-line"></div>
           <div><strong>${d.name}</strong></div>
-          <div>Director</div>
+          <div>${roleLabel}</div>
           <div>Date: ${sigDate}</div>
           <div>Place: ${sigPlace}</div>
         </div>`).join('')
     : `<div class="sig-block">
         <div class="sig-line"></div>
-        <div><strong>${state.afs.signingDirector||'[Director]'}</strong></div>
+        <div><strong>${state.afs.signingDirector||'['+roleLabel+']'}</strong></div>
         <div>Date: ${sigDate}</div>
         <div>Place: ${sigPlace}</div>
       </div>`;
   document.getElementById('print-responsibilities').innerHTML = `
-    <div class="afs-print-heading">${pluralise("Directors' Responsibilities and Approval")}</div>
+    <div class="afs-print-heading">${pluralise(_et.respTitle)}</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('responsibilities')))}</div>
     <div style="margin-top:16px">${sigBlocks}</div>`;
 
   // ── Preparation / Review Report ──
   const reportTitle = isReview ? 'Independent Review Report' : 'Independent Preparation Report';
+  const toTheLabel  = isSingleDirector ? _et.roleSCap : _et.toThe;
   const reportBody  = isReview
     ? fill(state.afs.reviewBody||'[Paste reviewer\'s letter text in AFS Details → Engagement Type → Review]')
     : pluralise(fill(s.compilationBody || DEFAULT_COMPILATION_BODY));
@@ -6301,12 +6604,9 @@ function printFullAFS(){
   const sigPractice = isReview ? rvPractice                     : s.practiceName;
   const sigReg      = isReview ? rvReg                          : s.practiceReg;
   if(isReview){
-    // Review report: two separate print-section divs = two genuine blank pages.
-    // Each print-section gets page-break-before:always from CSS.
-    // Screen shows a placeholder on page 1 only; printed pages are clean and empty.
     document.getElementById('print-compilation').innerHTML = `
       <div class="afs-print-heading">${reportTitle}</div>
-      <div class="afs-print-subheading">To the ${isSingleDirector?'Director':'Directors'} of ${cn}</div>
+      <div class="afs-print-subheading">To the ${toTheLabel} of ${cn}</div>
       <div class="no-print" style="margin-top:80px;text-align:center;color:var(--ink-light);font-size:13px;border:1px dashed var(--rule);padding:32px;border-radius:6px">
         ↓ Two blank pages reserved for reviewer's report — insert physical document here ↓
       </div>`;
@@ -6319,7 +6619,7 @@ function printFullAFS(){
     pc2c.innerHTML = '';
     document.getElementById('print-compilation').innerHTML = `
       <div class="afs-print-heading">${reportTitle}</div>
-      <div class="afs-print-subheading">To the Director${dirs.length>1?'s':''} of ${cn}</div>
+      <div class="afs-print-subheading">To the ${toTheLabel} of ${cn}</div>
       <div class="afs-print-body" style="margin-bottom:32px">${reportBody}</div>
       <div class="sig-block">
         <div class="sig-line"></div>
@@ -7292,7 +7592,7 @@ function _applyFilters(lines, f){
   return lines.filter(l=>{
     if(f.dateFrom && l.date < f.dateFrom) return false;
     if(f.dateTo   && l.date > f.dateTo)   return false;
-    if(f.desc && !(l.description||'').toLowerCase().includes(f.desc)) return false;
+    if(f.desc && !(l.description||'').toLowerCase().includes(f.desc) && !(l.payee||'').toLowerCase().includes(f.desc)) return false;
     const inAmt  = l.moneyIn||0;
     const outAmt = l.moneyOut||0;
     // Money In direction filter
