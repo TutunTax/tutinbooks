@@ -119,26 +119,26 @@
   .t-account .t-col-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--ink);color:var(--ink-light);}
   .t-account .t-col-head.t-dr{text-align:left;border-right:2px solid var(--ink);}
   .t-account .t-col-head.t-cr{text-align:left;}
-  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:6px 10px;vertical-align:top;width:50%;}
-  .t-account td.t-cr-cell{padding:6px 10px;vertical-align:top;width:50%;}
-  .t-account .t-entry{display:grid;grid-template-columns:72px 1fr auto;gap:4px;padding:3px 0;border-bottom:1px dashed var(--rule);align-items:baseline;}
-  .t-account .t-entry:last-child{border-bottom:none;}
-  .t-account .t-entry-desc{color:var(--ink);word-break:break-word;overflow-wrap:break-word;white-space:normal;line-height:1.4;}
-  .t-account .t-entry-date{color:var(--ink-light);font-size:10px;white-space:nowrap;font-family:var(--mono);}
-  .t-account .t-entry-amt{font-family:var(--mono);white-space:nowrap;text-align:right;padding-left:8px;}
-  .t-account .t-entry.t-bold .t-entry-desc{font-style:italic;color:var(--ink-light);}
-  .t-account .t-entry.t-bold .t-entry-amt{font-weight:600;}
+  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:4px 6px;vertical-align:top;width:50%;}
+  .t-account td.t-cr-cell{padding:4px 6px;vertical-align:top;width:50%;}
+  .t-entry-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .t-entry-table td{padding:2px 4px;vertical-align:top;border-bottom:1px dashed var(--rule);}
+  .t-entry-table tr:last-child td{border-bottom:none;}
+  .t-entry-table .col-date{white-space:nowrap;font-family:var(--mono);font-size:10px;color:var(--ink-light);width:72px;}
+  .t-entry-table .col-desc{word-break:break-word;}
+  .t-entry-table .col-desc.is-system{font-style:italic;color:var(--ink-light);}
+  .t-entry-table .col-amt{white-space:nowrap;font-family:var(--mono);text-align:right;width:90px;}
   .t-account .t-total-row td{border-top:3px double var(--ink);padding:5px 10px;font-weight:700;font-family:var(--mono);}
   .t-account .t-total-row td.t-dr-cell{text-align:right;border-right:2px solid var(--ink);}
   .t-account .t-total-row td.t-cr-cell{text-align:right;}
-  .t-account .t-bal-row td{background:var(--surface);padding:5px 10px;font-size:11px;color:var(--ink-light);}
-  .t-account .t-bal-row td.t-dr-cell{border-right:2px solid var(--ink);}
-  .t-account .t-empty{color:var(--ink-light);font-style:italic;font-size:11px;padding:6px 2px;}
+  .t-account .t-bal-row td{background:var(--surface);padding:5px 10px;font-size:11px;color:var(--ink-light);text-align:center;border-right:none;}
+  .t-empty{color:var(--ink-light);font-style:italic;font-size:11px;padding:6px 4px;}
   @media print{
     .t-account-wrap{break-inside:avoid;page-break-inside:avoid;}
     .t-account{border:1.5pt solid #000;}
     .t-account .t-title{background:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .t-account .t-total-row td{border-top:3pt double #000;}
+    .t-entry-table td{border-bottom:1px dashed #ccc;}
   }
     #gl-card{border:none;box-shadow:none;}
     .main-wrap{margin-left:0 !important;padding-top:0 !important;}
@@ -3381,20 +3381,15 @@ function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNe
                             .reduce((s,e)=>s+e.amt,0);
   const lineTotal = Math.max(drTotal, crTotal);
 
-  // Strip trailing amount from description (bank imports embed amount at end e.g. "...76328T 597,08")
-  function cleanDesc(desc){
-    return (desc||'').replace(/\s+[\d\s]+[,.][\d]{2}$/, '').replace(/\s+\d[\d\s]*$/, '').trim();
-  }
-
-  // Render helper for one side
+  // Render one side as an inner table: date | description | amount
   function renderSide(entries){
     if(!entries.length) return `<div class="t-empty">—</div>`;
-    return entries.map(e=>`
-      <div class="t-entry${e.bold?' t-bold':''}">
-        <span class="t-entry-date">${e.date?fmtDate(e.date):''}</span>
-        <span class="t-entry-desc">${e.bold?`<em>${e.desc}</em>`:cleanDesc(e.desc)}</span>
-        <span class="t-entry-amt">${fmtAmt2(e.amt)}</span>
-      </div>`).join('');
+    const rows = entries.map(e=>`<tr>
+      <td class="col-date">${e.date?fmtDate(e.date):''}</td>
+      <td class="col-desc${e.bold?' is-system':''}">${e.bold?`<em>${e.desc}</em>`:e.desc}</td>
+      <td class="col-amt">${fmtAmt2(e.amt)}</td>
+    </tr>`).join('');
+    return `<table class="t-entry-table"><tbody>${rows}</tbody></table>`;
   }
 
   const classLabel = classFilter
@@ -3430,9 +3425,9 @@ function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNe
           </tr>
           ${Math.abs(closingBal)>=0.005?`
           <tr class="t-bal-row">
-            <td class="t-dr-cell" colspan="2" style="text-align:center;border-right:none">
-              Balance c/d: <strong>${fmtAmt2(Math.abs(closingBal))}</strong>
-              <span style="font-size:10px;color:var(--ink-light);margin-left:4px">${closingBal>0?'Debit balance':'Credit balance'}</span>
+            <td colspan="2" style="text-align:center;padding:5px 10px;background:var(--surface);font-size:11px;color:var(--ink-light);border-top:1px solid var(--rule)">
+              Balance c/d: <strong style="font-family:var(--mono)">${fmtAmt2(Math.abs(closingBal))}</strong>
+              <span style="margin-left:6px">${closingBal>0?'Debit balance':'Credit balance'}</span>
             </td>
           </tr>`:''}
         </tbody>
