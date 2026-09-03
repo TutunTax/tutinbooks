@@ -112,6 +112,32 @@
   @media print {
     .sidebar,.top-bar,.io-bar,.toolbar,.no-print{display:none !important;}
     #gl-table th,#gl-table td{font-size:11px;padding:5px 8px;}
+  /* ── T-Account styles ── */
+  .t-account-wrap{margin-bottom:28px;break-inside:avoid;page-break-inside:avoid;}
+  .t-account{width:100%;border-collapse:collapse;border:2px solid var(--ink);font-size:12px;}
+  .t-account .t-title{background:var(--ink);color:#fff;font-weight:700;font-size:13px;letter-spacing:.04em;padding:8px 14px;text-align:center;}
+  .t-account .t-col-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--ink);color:var(--ink-light);}
+  .t-account .t-col-head.t-dr{text-align:left;border-right:2px solid var(--ink);}
+  .t-account .t-col-head.t-cr{text-align:left;}
+  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:4px 10px;vertical-align:top;width:50%;}
+  .t-account td.t-cr-cell{padding:4px 10px;vertical-align:top;width:50%;}
+  .t-account .t-entry{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--rule);}
+  .t-account .t-entry:last-child{border-bottom:none;}
+  .t-account .t-entry-desc{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .t-account .t-entry-date{color:var(--ink-light);font-size:10px;white-space:nowrap;margin-right:6px;flex-shrink:0;}
+  .t-account .t-entry-amt{font-family:var(--mono);white-space:nowrap;flex-shrink:0;}
+  .t-account .t-total-row td{border-top:3px double var(--ink);padding:5px 10px;font-weight:700;font-family:var(--mono);}
+  .t-account .t-total-row td.t-dr-cell{text-align:right;border-right:2px solid var(--ink);}
+  .t-account .t-total-row td.t-cr-cell{text-align:right;}
+  .t-account .t-bal-row td{background:var(--surface);padding:5px 10px;font-size:11px;color:var(--ink-light);}
+  .t-account .t-bal-row td.t-dr-cell{border-right:2px solid var(--ink);}
+  .t-account .t-empty{color:var(--ink-light);font-style:italic;font-size:11px;padding:6px 2px;}
+  @media print{
+    .t-account-wrap{break-inside:avoid;page-break-inside:avoid;}
+    .t-account{border:1.5pt solid #000;}
+    .t-account .t-title{background:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .t-account .t-total-row td{border-top:3pt double #000;}
+  }
     #gl-card{border:none;box-shadow:none;}
     .main-wrap{margin-left:0 !important;padding-top:0 !important;}
     main{max-width:100% !important;}
@@ -1193,7 +1219,20 @@
 
     <!-- Controls (screen only) -->
     <div class="card no-print" style="margin-bottom:16px">
-      <div class="card-title">General Ledger</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin:0">General Ledger</div>
+        <!-- View mode toggle -->
+        <div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden">
+          <button id="gl-mode-columnar" onclick="glSetMode('columnar')"
+            style="padding:5px 14px;font-size:12px;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">
+            ≡ Columnar
+          </button>
+          <button id="gl-mode-taccount" onclick="glSetMode('taccount')"
+            style="padding:5px 14px;font-size:12px;border:none;cursor:pointer;background:transparent;color:var(--ink-light);font-family:inherit">
+            ⊤ T-Account
+          </button>
+        </div>
+      </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div class="form-group" style="min-width:220px;flex:1">
           <label>Account</label>
@@ -1209,22 +1248,27 @@
           <label>To</label>
           <input type="date" id="gl-to" onchange="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
         </div>
-        <div class="form-group" style="min-width:180px;flex:1">
+        <div class="form-group" style="min-width:160px;flex:1">
           <label>Search description</label>
           <input type="text" id="gl-search" placeholder="Filter by description…" oninput="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
+        </div>
+        <div class="form-group" id="gl-class-wrap" style="min-width:160px;flex:1;display:none">
+          <label>Class</label>
+          <select id="gl-class" onchange="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
+            <option value="">— all classes —</option>
+          </select>
         </div>
         <button class="btn btn-ghost" onclick="glClearFilters()" style="height:34px;font-size:12px">Clear filters</button>
       </div>
     </div>
 
-    <!-- Ledger card -->
+    <!-- Ledger card — Columnar view -->
     <div class="card" id="gl-card" style="padding:0">
       <!-- Account heading (print + screen) -->
       <div id="gl-heading" style="padding:16px 20px 12px;border-bottom:2px solid var(--ink)">
         <div style="font-size:16px;font-weight:700;letter-spacing:.04em" id="gl-account-title">Select an account</div>
         <div style="font-size:12px;color:var(--ink-light);margin-top:2px" id="gl-period-label"></div>
       </div>
-
       <div style="overflow-x:auto">
         <table id="gl-table" style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
@@ -1242,6 +1286,11 @@
         </table>
       </div>
       <div id="gl-empty" style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px;display:none">No transactions in this range.</div>
+    </div>
+
+    <!-- T-Account card -->
+    <div id="gl-taccount-card" style="display:none">
+      <div id="gl-taccount-body"></div>
     </div>
   </div>
 
@@ -3055,8 +3104,34 @@ function _glSourceLabel(src){
   return src;
 }
 
+// ── GL view mode (session-only) ────────────────────────────────────────────
+let _glMode = 'columnar'; // 'columnar' | 'taccount'
+
+function glSetMode(mode){
+  _glMode = mode;
+  const colBtn = document.getElementById('gl-mode-columnar');
+  const taBtn  = document.getElementById('gl-mode-taccount');
+  if(colBtn){ colBtn.style.background = mode==='columnar' ? 'var(--accent)' : 'transparent'; colBtn.style.color = mode==='columnar' ? '#fff' : 'var(--ink-light)'; }
+  if(taBtn) { taBtn.style.background  = mode==='taccount' ? 'var(--accent)' : 'transparent'; taBtn.style.color  = mode==='taccount' ? '#fff' : 'var(--ink-light)'; }
+  renderGL();
+}
+
+function _glPopulateClassDropdown(){
+  const wrap = document.getElementById('gl-class-wrap');
+  const sel  = document.getElementById('gl-class');
+  if(!wrap||!sel) return;
+  const multiClassOn = !!(state.client&&state.client.multiClass);
+  wrap.style.display = multiClassOn ? '' : 'none';
+  if(!multiClassOn) return;
+  const classes = (state.client&&state.client.classes)||[];
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— all classes —</option>'
+    + classes.map(c=>`<option value="${c.id}" ${c.id===cur?'selected':''}>${c.name}</option>`).join('');
+}
+
 function glClearFilters(){
   document.getElementById('gl-search').value='';
+  const clSel = document.getElementById('gl-class'); if(clSel) clSel.value='';
   // Reset dates to default (full CY period)
   _glSetDefaultDates();
   renderGL();
@@ -3097,6 +3172,7 @@ function _glPopulateAccountDropdown(){
 function renderGL(){
   ensureClient();
   _glPopulateAccountDropdown();
+  _glPopulateClassDropdown();
 
   // Set default dates on first call
   const fromEl = document.getElementById('gl-from');
@@ -3107,12 +3183,20 @@ function renderGL(){
   const fromDate  = fromEl.value||'';
   const toDate    = toEl.value||'';
   const search    = (document.getElementById('gl-search').value||'').toLowerCase();
+  const classFilter = (document.getElementById('gl-class')?.value||'');
 
-  // Update heading
+  // Show/hide correct card based on mode
+  const colCard = document.getElementById('gl-card');
+  const taCard  = document.getElementById('gl-taccount-card');
+  const isTAccount = _glMode === 'taccount';
+  if(colCard) colCard.style.display = isTAccount ? 'none' : '';
+  if(taCard)  taCard.style.display  = isTAccount ? '' : 'none';
+
+  // Update heading (columnar only — T-account has its own)
   const titleEl  = document.getElementById('gl-account-title');
   const periodEl = document.getElementById('gl-period-label');
-  titleEl.textContent  = acctName||'Select an account';
-  periodEl.textContent = (fromDate||toDate)
+  if(titleEl) titleEl.textContent  = acctName||'Select an account';
+  if(periodEl) periodEl.textContent = (fromDate||toDate)
     ? `${fromDate?fmtDate(fromDate):'Start'} — ${toDate?fmtDate(toDate):'End'}`
     : '';
 
@@ -3128,31 +3212,26 @@ function renderGL(){
   const empty = document.getElementById('gl-empty');
   tbody.innerHTML=''; tfoot.innerHTML='';
 
-  if(!acctName){ empty.style.display=''; return; }
+  if(!acctName){
+    if(!isTAccount) empty.style.display='';
+    if(taCard) taCard.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px">Select an account to view the T-Account.</div>';
+    return;
+  }
   empty.style.display='none';
 
   // ── Find account category ──
   const acct = state.accounts.find(a=>a.name===acctName);
   const cat  = acct ? acct.cat : '';
-  const isBS = BS_CATS.has(cat);
-  // Normal balance: Assets & Expenses = Debit; Liabilities, Equity, Income = Credit
-  const normalDebit = ['Cash and Cash Equivalents','Current Asset','Non-Current Asset',
-                       'Shareholders Loan Asset','Expense','Other Expense','Cost of Sales'].includes(cat);
 
-  // ── Compute opening balance ──
-  // Opening = cumulative effect of ALL transactions for this account BEFORE fromDate
-  // For QBO/Sage imports: PY import is treated as a lump opening if it predates fromDate
+  // ── Compute opening balance (class filter does NOT apply to opening balance — it is a full account balance) ──
   let openDr = 0, openCr = 0;
-
   const cyDate = state.client.reportDate||'';
   (state.transactions||[]).forEach(txn=>{
     const src = txn.source||'';
     const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
     const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
     const isManual   = !isPYImport && !isCYImport;
-    // Respect report date cutoff for manual/cashbook transactions
     if(isManual && cyDate && txn.date > cyDate) return;
-    // Only count if transaction is BEFORE the fromDate window
     const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
     if(fromDate && txnDate >= fromDate) return;
     txn.lines.forEach(l=>{
@@ -3162,10 +3241,43 @@ function renderGL(){
     });
   });
 
-  // Opening balance as signed net (positive = Dr side, negative = Cr side)
   let runBal = openDr - openCr; // positive = debit balance
 
-  // ── Opening balance row ──
+  // ── Collect and filter transactions in range ──
+  let allLines = [];
+  (state.transactions||[]).forEach(txn=>{
+    const src = txn.source||'';
+    const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
+    const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
+    const isManual   = !isPYImport && !isCYImport;
+    if(isManual && cyDate && txn.date > cyDate) return;
+    const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
+    if(fromDate && txnDate < fromDate) return;
+    if(toDate   && txnDate > toDate)   return;
+    txn.lines.forEach(l=>{
+      if(l.account!==acctName) return;
+      if(search && !txn.desc.toLowerCase().includes(search)) return;
+      // Class filter: skip if class set and line classId doesn't match
+      if(classFilter && (l.classId||'')!==classFilter) return;
+      allLines.push({date:txnDate, desc:txn.desc, src:src, debit:l.debit||0, credit:l.credit||0, classId:l.classId||'', txnId:txn.id});
+    });
+  });
+
+  allLines.sort((a,b)=>a.date.localeCompare(b.date));
+
+  // ── Dispatch to the right renderer ──
+  if(isTAccount){
+    _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, runBal, allLines, taCard, classFilter);
+  } else {
+    _renderGLColumnar(acctName, fromDate, toDate, runBal, allLines, tbody, tfoot, empty);
+  }
+}
+
+function _renderGLColumnar(acctName, fromDate, toDate, openBalNet, allLines, tbody, tfoot, empty){
+  let runBal = openBalNet;
+  const openDr = runBal > 0 ? runBal : 0;
+  const openCr = runBal < 0 ? -runBal : 0;
+
   const fmtBal = (bal) => {
     const abs = Math.abs(bal);
     const side = bal >= 0 ? 'Dr' : 'Cr';
@@ -3181,30 +3293,7 @@ function renderGL(){
     <td style="padding:7px 10px;text-align:right">${fmtBal(runBal)}</td>
   </tr>`;
 
-  // ── Collect and filter transactions in range ──
-  let allLines = [];
-  (state.transactions||[]).forEach(txn=>{
-    const src = txn.source||'';
-    const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
-    const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
-    const isManual   = !isPYImport && !isCYImport;
-    if(isManual && cyDate && txn.date > cyDate) return;
-    // Use priorYearDate as the effective date for PY imports
-    const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
-    if(fromDate && txnDate < fromDate) return;
-    if(toDate   && txnDate > toDate)   return;
-    txn.lines.forEach(l=>{
-      if(l.account!==acctName) return;
-      if(search && !txn.desc.toLowerCase().includes(search)) return;
-      allLines.push({date:txnDate, desc:txn.desc, src:src, debit:l.debit||0, credit:l.credit||0, txnId:txn.id});
-    });
-  });
-
-  // Sort by date then by insertion order (stable)
-  allLines.sort((a,b)=>a.date.localeCompare(b.date));
-
-  // ── Render transaction rows ──
-  let periodDr = 0, periodCr = 0;
+  let periodDr=0, periodCr=0;
   allLines.forEach((line,i)=>{
     runBal += line.debit - line.credit;
     periodDr += line.debit;
@@ -3219,10 +3308,8 @@ function renderGL(){
       <td style="padding:6px 10px;text-align:right">${fmtBal(runBal)}</td>
     </tr>`;
   });
-
   tbody.innerHTML = rows;
 
-  // ── Footer: period totals + closing balance ──
   tfoot.innerHTML = `
     <tr style="border-top:2px solid var(--ink);font-weight:700;background:var(--surface)">
       <td style="padding:8px 10px" colspan="3">Period Totals</td>
@@ -3237,6 +3324,106 @@ function renderGL(){
 
   empty.style.display = allLines.length===0 ? '' : 'none';
   if(allLines.length===0) tbody.innerHTML='';
+}
+
+function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNet, allLines, container, classFilter){
+  // Separate into Dr and Cr entry lists
+  const drEntries = [];
+  const crEntries = [];
+
+  // Opening balance goes on its natural side
+  if(Math.abs(openBalNet) >= 0.005){
+    const side = openBalNet > 0 ? 'dr' : 'cr';
+    const amt  = Math.abs(openBalNet);
+    const label = fromDate ? 'Balance b/d' : 'Opening Balance';
+    if(side==='dr') drEntries.push({date:fromDate, desc:label, amt, bold:true});
+    else            crEntries.push({date:fromDate, desc:label, amt, bold:true});
+  }
+
+  // Transaction entries
+  allLines.forEach(l=>{
+    if(l.debit  > 0.005) drEntries.push({date:l.date, desc:l.desc, amt:l.debit,  bold:false});
+    if(l.credit > 0.005) crEntries.push({date:l.date, desc:l.desc, amt:l.credit, bold:false});
+  });
+
+  // Closing balance — brought down on the correct side
+  let closingBal = openBalNet;
+  allLines.forEach(l=>{ closingBal += l.debit - l.credit; });
+
+  // Gross totals for the total row
+  const totalDr = drEntries.reduce((s,e)=>s+(e.bold?0:e.amt),0) + (openBalNet>0 ? openBalNet : 0);
+  const totalCr = crEntries.reduce((s,e)=>s+(e.bold?0:e.amt),0) + (openBalNet<0 ? -openBalNet : 0);
+  const grandTotal = Math.max(totalDr, totalCr);
+
+  // Balance c/d — added to the lighter side to make totals equal
+  if(Math.abs(closingBal) >= 0.005){
+    if(closingBal > 0){
+      // Dr balance: c/d goes on Cr side, b/d goes on Dr side
+      crEntries.push({date:toDate, desc:'Balance c/d', amt:closingBal, bold:true, clos:true});
+    } else {
+      // Cr balance: c/d goes on Dr side, b/d goes on Cr side
+      drEntries.push({date:toDate, desc:'Balance c/d', amt:-closingBal, bold:true, clos:true});
+    }
+  }
+
+  // Gross totals after adding c/d
+  const drTotal = drEntries.filter(e=>!e.clos||!e.bold||e.desc==='Balance c/d'?true:false)
+                            .reduce((s,e)=>s+e.amt,0);
+  const crTotal = crEntries.filter(e=>!e.clos||!e.bold||e.desc==='Balance c/d'?true:false)
+                            .reduce((s,e)=>s+e.amt,0);
+  const lineTotal = Math.max(drTotal, crTotal);
+
+  // Render helper for one side
+  function renderSide(entries){
+    if(!entries.length) return `<div class="t-empty">—</div>`;
+    return entries.map(e=>`
+      <div class="t-entry${e.bold?' t-bold':''}">
+        <span class="t-entry-date">${e.date?fmtDate(e.date):''}</span>
+        <span class="t-entry-desc" title="${(e.desc||'').replace(/"/g,'&quot;')}">${e.bold?`<em>${e.desc}</em>`:e.desc}</span>
+        <span class="t-entry-amt">${fmtAmt2(e.amt)}</span>
+      </div>`).join('');
+  }
+
+  const classLabel = classFilter
+    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl?' — '+cl.name:''; })()
+    : '';
+  const periodLabel = (fromDate||toDate)
+    ? `${fromDate?fmtDate(fromDate):'Start'} to ${toDate?fmtDate(toDate):'End'}`
+    : '';
+
+  container.innerHTML = `
+    <div class="t-account-wrap">
+      <table class="t-account">
+        <colgroup><col style="width:50%"><col style="width:50%"></colgroup>
+        <tbody>
+          <tr>
+            <td class="t-title" colspan="2">
+              ${acctName}${classLabel}
+              ${periodLabel?`<div style="font-size:10px;font-weight:400;opacity:.8;margin-top:2px">${periodLabel}</div>`:''}
+            </td>
+          </tr>
+          <tr>
+            <td class="t-col-head t-dr">Dr</td>
+            <td class="t-col-head t-cr">Cr</td>
+          </tr>
+          <tr>
+            <td class="t-dr-cell">${renderSide(drEntries)}</td>
+            <td class="t-cr-cell">${renderSide(crEntries)}</td>
+          </tr>
+          <tr class="t-total-row">
+            <td class="t-dr-cell">${fmtAmt2(drTotal)}</td>
+            <td class="t-cr-cell">${fmtAmt2(crTotal)}</td>
+          </tr>
+          ${Math.abs(closingBal)>=0.005?`
+          <tr class="t-bal-row">
+            <td class="t-dr-cell" colspan="2" style="text-align:center;border-right:none">
+              Balance c/d: <strong>${fmtAmt2(Math.abs(closingBal))}</strong>
+              <span style="font-size:10px;color:var(--ink-light);margin-left:4px">${closingBal>0?'Debit balance':'Credit balance'}</span>
+            </td>
+          </tr>`:''}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 // ── Note reference helper ──────────────────────────────────────────────────
