@@ -119,13 +119,15 @@
   .t-account .t-col-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--ink);color:var(--ink-light);}
   .t-account .t-col-head.t-dr{text-align:left;border-right:2px solid var(--ink);}
   .t-account .t-col-head.t-cr{text-align:left;}
-  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:4px 10px;vertical-align:top;width:50%;}
-  .t-account td.t-cr-cell{padding:4px 10px;vertical-align:top;width:50%;}
-  .t-account .t-entry{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--rule);}
+  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:6px 10px;vertical-align:top;width:50%;}
+  .t-account td.t-cr-cell{padding:6px 10px;vertical-align:top;width:50%;}
+  .t-account .t-entry{display:grid;grid-template-columns:72px 1fr auto;gap:4px;padding:3px 0;border-bottom:1px dashed var(--rule);align-items:baseline;}
   .t-account .t-entry:last-child{border-bottom:none;}
-  .t-account .t-entry-desc{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-  .t-account .t-entry-date{color:var(--ink-light);font-size:10px;white-space:nowrap;margin-right:6px;flex-shrink:0;}
-  .t-account .t-entry-amt{font-family:var(--mono);white-space:nowrap;flex-shrink:0;}
+  .t-account .t-entry-desc{color:var(--ink);word-break:break-word;overflow-wrap:break-word;white-space:normal;line-height:1.4;}
+  .t-account .t-entry-date{color:var(--ink-light);font-size:10px;white-space:nowrap;font-family:var(--mono);}
+  .t-account .t-entry-amt{font-family:var(--mono);white-space:nowrap;text-align:right;padding-left:8px;}
+  .t-account .t-entry.t-bold .t-entry-desc{font-style:italic;color:var(--ink-light);}
+  .t-account .t-entry.t-bold .t-entry-amt{font-weight:600;}
   .t-account .t-total-row td{border-top:3px double var(--ink);padding:5px 10px;font-weight:700;font-family:var(--mono);}
   .t-account .t-total-row td.t-dr-cell{text-align:right;border-right:2px solid var(--ink);}
   .t-account .t-total-row td.t-cr-cell{text-align:right;}
@@ -3192,19 +3194,25 @@ function renderGL(){
   if(colCard) colCard.style.display = isTAccount ? 'none' : '';
   if(taCard)  taCard.style.display  = isTAccount ? '' : 'none';
 
+  // Resolve class label once — used in both columnar and T-account headings
+  const classLabel = classFilter
+    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl ? cl.name : ''; })()
+    : '';
+
   // Update heading (columnar only — T-account has its own)
   const titleEl  = document.getElementById('gl-account-title');
   const periodEl = document.getElementById('gl-period-label');
   if(titleEl) titleEl.textContent  = acctName||'Select an account';
-  if(periodEl) periodEl.textContent = (fromDate||toDate)
-    ? `${fromDate?fmtDate(fromDate):'Start'} — ${toDate?fmtDate(toDate):'End'}`
-    : '';
+  if(periodEl) periodEl.textContent = [
+    (fromDate||toDate) ? `${fromDate?fmtDate(fromDate):'Start'} — ${toDate?fmtDate(toDate):'End'}` : '',
+    classLabel ? `Class: ${classLabel}` : ''
+  ].filter(Boolean).join('  ·  ');
 
   // Update print client line
   const cl = document.getElementById('gl-print-client');
   if(cl){
     const cn = state.client.name||''; const reg = state.client.reg||'';
-    cl.textContent = cn + (reg?' — Reg No: '+reg:'') + (toDate?' | For the period ended '+fmtDate(toDate):'');
+    cl.textContent = cn + (reg?' — Reg No: '+reg:'') + (toDate?' | For the period ended '+fmtDate(toDate):'') + (classLabel?' | Class: '+classLabel:'');
   }
 
   const tbody = document.getElementById('gl-body');
@@ -3379,13 +3387,13 @@ function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNe
     return entries.map(e=>`
       <div class="t-entry${e.bold?' t-bold':''}">
         <span class="t-entry-date">${e.date?fmtDate(e.date):''}</span>
-        <span class="t-entry-desc" title="${(e.desc||'').replace(/"/g,'&quot;')}">${e.bold?`<em>${e.desc}</em>`:e.desc}</span>
+        <span class="t-entry-desc">${e.bold?`<em>${e.desc}</em>`:e.desc}</span>
         <span class="t-entry-amt">${fmtAmt2(e.amt)}</span>
       </div>`).join('');
   }
 
   const classLabel = classFilter
-    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl?' — '+cl.name:''; })()
+    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl ? cl.name : ''; })()
     : '';
   const periodLabel = (fromDate||toDate)
     ? `${fromDate?fmtDate(fromDate):'Start'} to ${toDate?fmtDate(toDate):'End'}`
@@ -3398,7 +3406,8 @@ function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNe
         <tbody>
           <tr>
             <td class="t-title" colspan="2">
-              ${acctName}${classLabel}
+              ${acctName}
+              ${classLabel?`<div style="font-size:10px;font-weight:600;opacity:.9;margin-top:3px;letter-spacing:.06em;text-transform:uppercase">Class: ${classLabel}</div>`:''}
               ${periodLabel?`<div style="font-size:10px;font-weight:400;opacity:.8;margin-top:2px">${periodLabel}</div>`:''}
             </td>
           </tr>
@@ -3782,6 +3791,17 @@ function renderPL(){
   table.innerHTML=html;
   document.getElementById('pl-print-date').textContent='';
   updatePrintHeaders();
+  // If a class is active, append its name to the P&L print header
+  if(_plActiveClass){
+    const activeClass = (state.client&&state.client.classes||[]).find(c=>c.id===_plActiveClass);
+    if(activeClass){
+      const plLine = document.getElementById('pl-client-line');
+      const plLineScreen = document.getElementById('pl-client-line-screen');
+      const classTag = ' | Class: '+activeClass.name;
+      if(plLine) plLine.textContent += classTag;
+      if(plLineScreen) plLineScreen.textContent += classTag;
+    }
+  }
 }
 
 // ── Statement of Changes in Equity ────────────────────────────────────────
