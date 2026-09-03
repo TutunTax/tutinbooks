@@ -18,17 +18,17 @@
   .app{display:flex;min-height:100vh;}
 
   /* ── Sidebar ── */
-  .sidebar{width:210px;min-width:210px;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;}
-  .sidebar-logo{display:flex;align-items:center;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--rule);}
+  .sidebar{width:210px;min-width:210px;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow:hidden;}
+  .sidebar-logo{display:flex;align-items:center;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--rule);flex-shrink:0;}
   .sidebar-logo img{height:32px;width:auto;}
   .sidebar-logo span{font-weight:600;letter-spacing:.04em;font-size:14px;}
-  .sidebar-file{padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--surface);}
+  .sidebar-file{padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--surface);flex-shrink:0;}
   .file-name{font-size:10px;color:var(--ink-light);font-family:var(--mono);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;}
   .sidebar-io{display:flex;flex-direction:column;gap:4px;}
   .sidebar-io .btn{height:30px;font-size:12px;justify-content:flex-start;gap:6px;padding:0 10px;width:100%;}
   .sidebar-io-row{display:flex;gap:4px;}
   .sidebar-io-row .btn{flex:1;}
-  .sidebar-nav{flex:1;padding:8px 0;}
+  .sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
   .nav-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);padding:10px 14px 4px;margin-top:4px;}
   .nav-group-label:first-child{margin-top:0;}
   .sidebar-nav button{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;cursor:pointer;padding:7px 14px;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);text-align:left;transition:background .12s,color .12s;border-radius:0;}
@@ -36,8 +36,11 @@
   .sidebar-nav button.active{background:var(--accent-dim);color:var(--accent);font-weight:600;}
   .sidebar-nav button:disabled{opacity:.4;cursor:not-allowed;}
   .sidebar-nav button .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
-  .sidebar-bottom{padding:8px 12px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:4px;}
+  .sidebar-bottom{padding:8px 12px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
   .sidebar-bottom .btn{height:30px;font-size:12px;justify-content:flex-start;gap:6px;padding:0 10px;width:100%;}
+  /* Unsaved changes indicator */
+  #unsaved-indicator{display:none;margin-top:4px;padding:4px 8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;font-size:11px;font-weight:600;color:#b45309;text-align:center;animation:pulse-amber 2s ease-in-out infinite;}
+  @keyframes pulse-amber{0%,100%{opacity:1;}50%{opacity:.6;}}
 
   /* ── Top bar ── */
   .top-bar{position:fixed;top:0;left:210px;right:0;height:42px;background:var(--white);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 24px;z-index:90;gap:12px;}
@@ -420,6 +423,7 @@
       </div>
       <button class="btn btn-ghost" onclick="saveAsFileJSON()">Save As…</button>
       <span id="save-state" style="font-size:10px;color:var(--ink-light);font-family:var(--mono);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+      <div id="unsaved-indicator">⚠ Unsaved changes</div>
     </div>
   </div>
 
@@ -2543,6 +2547,7 @@ function updateClientDetails(manualDateChange){
     state.client.reportDate = document.getElementById('client-report-date').value;
     state.client.reportDateManual = true;
   }
+  _markDirty();
   updatePrintHeaders();
 }
 
@@ -2868,6 +2873,7 @@ function postEntry(){
       ...(l.payee&&l.payee.trim()?{payee:l.payee.trim()}:{})
     }))};
   state.transactions.push(txn);
+  _markDirty();
   entryLines=[];
   document.getElementById('txn-desc').value='';
   addLine();addLine();
@@ -2905,6 +2911,7 @@ function renderTxns(){
 function delTxn(id){
   if(!confirm('Delete this journal entry?'))return;
   state.transactions=state.transactions.filter(t=>t.id!==id);
+  _markDirty();
   renderTxns();
 }
 
@@ -6423,6 +6430,7 @@ function rollForward(){
   }
   populateAFSForm();
   _setSaveState('Roll forward complete — save this file as your 2025 JSON');
+  _markDirty();
 
   alert(
     '✓ Roll forward complete.\n\n' +
@@ -7036,12 +7044,26 @@ function _defaultFileName(){
 
 function _setSaveState(msg){ document.getElementById('save-state').textContent = msg; }
 
+let _isDirty = false;
+function _markDirty(){
+  if(_isDirty) return; // already dirty, no need to re-mark
+  _isDirty = true;
+  const ind = document.getElementById('unsaved-indicator');
+  if(ind) ind.style.display = '';
+}
+function _markClean(){
+  _isDirty = false;
+  const ind = document.getElementById('unsaved-indicator');
+  if(ind) ind.style.display = 'none';
+}
+
 function _legacyDownload(json){
   const a = document.createElement('a');
   a.href = 'data:application/json,'+encodeURIComponent(json);
   a.download = _defaultFileName();
   a.click();
   _setSaveState('Downloaded: '+_defaultFileName());
+  _markClean();
 }
 
 async function saveFileJSON(){
@@ -7053,6 +7075,7 @@ async function saveFileJSON(){
         await writable.write(json);
         await writable.close();
         _setSaveState('✓ Saved: '+_fileHandle.name);
+        _markClean();
         return;
       }
       _fileHandle = await window.showSaveFilePicker({
@@ -7063,6 +7086,7 @@ async function saveFileJSON(){
       await writable.write(json);
       await writable.close();
       _setSaveState('✓ Saved: '+_fileHandle.name);
+      _markClean();
     } catch(err){
       if(err.name!=='AbortError') _legacyDownload(json);
     }
@@ -7091,6 +7115,7 @@ async function saveAsFileJSON(){
       await writable.write(json);
       await writable.close();
       _setSaveState('Saved: '+_fileHandle.name+' ✓');
+      _markClean();
     } catch(err){
       if(err.name!=='AbortError') _legacyDownload(json);
     }
@@ -7195,6 +7220,7 @@ function _loadStateFromJSON(text, filename){
       }
     });
     _setSaveState('Loaded: '+filename+(_fileHandle?' — Save will overwrite silently':' — Save will prompt for location'));
+    _markClean();
     document.getElementById('file-label').textContent = filename;
     const _tbf = document.getElementById('top-bar-filename');
     if(_tbf){ _tbf.textContent = filename; _tbf.classList.remove('no-file'); }
@@ -7553,6 +7579,7 @@ function generateImportEntry(slot){
   };
 
   state.transactions.push(entry);
+  _markDirty();
   updateTBIEntryStatus(slot);
   document.getElementById('tbi-entry-status-'+slot).textContent = '✓ Entry posted — dated '+fmtDate(date);
   renderTxns();
@@ -8203,6 +8230,7 @@ function saveContactModal(){
   } else {
     state.contacts.push(record);
   }
+  _markDirty();
   closeContactModal();
   renderContacts();
   _rebuildPayeeDatalist();
@@ -8211,6 +8239,7 @@ function saveContactModal(){
 function deleteContact(id){
   if(!confirm('Delete this contact? This cannot be undone.'))return;
   state.contacts=(state.contacts||[]).filter(c=>c.id!==id);
+  _markDirty();
   renderContacts();
   _rebuildPayeeDatalist();
 }
@@ -8837,6 +8866,7 @@ function _postLine(cb, line){
   };
   if(line.payee) txn.payee=line.payee;
   state.transactions.push(txn);
+  _markDirty();
   line.posted=true;
   line.journalId=journalId;
 }
