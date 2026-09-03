@@ -3381,13 +3381,18 @@ function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNe
                             .reduce((s,e)=>s+e.amt,0);
   const lineTotal = Math.max(drTotal, crTotal);
 
+  // Strip trailing amount from description (bank imports embed amount at end e.g. "...76328T 597,08")
+  function cleanDesc(desc){
+    return (desc||'').replace(/\s+[\d\s]+[,.][\d]{2}$/, '').replace(/\s+\d[\d\s]*$/, '').trim();
+  }
+
   // Render helper for one side
   function renderSide(entries){
     if(!entries.length) return `<div class="t-empty">—</div>`;
     return entries.map(e=>`
       <div class="t-entry${e.bold?' t-bold':''}">
         <span class="t-entry-date">${e.date?fmtDate(e.date):''}</span>
-        <span class="t-entry-desc">${e.bold?`<em>${e.desc}</em>`:e.desc}</span>
+        <span class="t-entry-desc">${e.bold?`<em>${e.desc}</em>`:cleanDesc(e.desc)}</span>
         <span class="t-entry-amt">${fmtAmt2(e.amt)}</span>
       </div>`).join('');
   }
