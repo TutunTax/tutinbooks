@@ -4686,16 +4686,10 @@ function renderBS(){
   // Equity
   let cyEqTot=0, pyEqTot=0, eqRows='';
   const _bsET = (state.client&&state.client.entityType)||'company';
-  const _bsPartners = _bsET==='partnership' ? (state.afs&&state.afs.directors||[]).filter(d=>d.name) : [];
   state.accounts.filter(a=>a.cat==='Equity').forEach(a=>{
     const cyNet=cy[a.name].cr-cy[a.name].dr;
     const pyNet=py[a.name].cr-py[a.name].dr;
-    if(Math.abs(cyNet)<0.005&&Math.abs(pyNet)<0.005) return;
-    // For partnership: only show accounts that match a partner's name
-    if(_bsET==='partnership' && _bsPartners.length>0){
-      const matchesPartner = _bsPartners.some(p=>a.name.toLowerCase().includes(p.name.toLowerCase()));
-      if(!matchesPartner) return;
-    }
+    if(Math.abs(cyNet)<0.005&&Math.abs(pyNet)<0.005) return; // skip genuinely empty accounts
     cyEqTot+=cyNet; pyEqTot+=pyNet;
     eqRows+=`<tr class="fs-row"><td class="indent">${a.name}</td>${getNoteRef(a.name)}<td class="num">${fmtPL(Math.round(cyNet))}</td>${hasPY?`<td class="num">${fmtPL(Math.round(pyNet))}</td>`:''}` + `</tr>`;
   });
