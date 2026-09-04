@@ -4710,19 +4710,23 @@ function renderBS(){
   });
   const cyPeriodProfit=cyIncPeriod-cyExpPeriod;
   const pyProfit=pyInc-pyExp;
-  // For QBO files, Retained Earnings already contains closed prior-year P&L — don't add it again.
-  // For manual journals, PY P&L sits in income/expense accounts and must be rolled into
-  // CY retained equity so the CY Balance Sheet balances correctly.
+  // For QBO/Sage files, Retained Earnings already contains closed prior-year P&L — don't add it again.
+  // For manual-journal clients, PY P&L sits in income/expense accounts and must be rolled into
+  // CY equity so the Balance Sheet balances correctly.
   const hasQBOImport = state.transactions.some(t=>t.source==='qbo_import_cy'||t.source==='qbo_import_py'||t.source==='sage_import_cy'||t.source==='sage_import_py');
   const pyProfitRollToCY = (!hasQBOImport && hasPY) ? pyProfit : 0;
   if(cyPeriodProfit!==0||pyProfit!==0){
     if(Math.abs(pyProfitRollToCY)>=0.005){
       const label = pyProfitRollToCY>=0 ? 'Prior Year Accumulated Profit' : 'Prior Year Accumulated Loss';
+      // CY column: PY profit rolled forward. PY column: dash (not yet accumulated at PY date)
       eqRows+=`<tr class="fs-row"><td class="indent">${label}</td><td class="note-ref"></td><td class="num">${fmtPL(Math.round(pyProfitRollToCY))}</td>${hasPY?'<td class="num">-</td>':''}` + `</tr>`;
       cyEqTot+=pyProfitRollToCY;
+      // pyEqTot does NOT get pyProfit here — it's shown separately below as Current Year Profit
     }
+    // Current Year Profit / (Loss) — CY column is current period; PY column is PY period
     eqRows+=`<tr class="fs-row"><td class="indent">Current Year Profit / (Loss)</td><td class="note-ref"></td><td class="num">${fmtPL(Math.round(cyPeriodProfit))}</td>${hasPY?`<td class="num">${fmtPL(Math.round(pyProfit))}</td>`:''}` + `</tr>`;
-    cyEqTot+=cyPeriodProfit; pyEqTot+=pyProfit;
+    cyEqTot+=cyPeriodProfit;
+    pyEqTot+=pyProfit; // PY column must include PY profit to balance the PY BS
   }
   const cyEqTotR = cyEqTot, pyEqTotR = pyEqTot;
   const eqSection = (cyEqTotR===0&&pyEqTotR===0) ? {html:'',cyTotal:0,pyTotal:0} : {
