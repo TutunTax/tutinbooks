@@ -3919,14 +3919,18 @@ function renderSoCE(){
   const cyYear  = state.client.reportDate      ? fmtReportDate(state.client.reportDate)      : 'Current Year';
   const pyYear  = state.client.priorYearDate   ? fmtReportDate(state.client.priorYearDate)   : 'Prior Year';
 
-  // Determine prior-year opening date label (one year before PY closing)
-  // We just show "1 March YYYY" style if possible, otherwise "Opening"
+  // Determine prior-year opening date label (day after one year before the closing date)
+  // Parse manually to avoid UTC/local timezone issues with new Date(string)
   function openingLabel(closingDateStr){
     if(!closingDateStr) return 'Opening balance';
-    const d = new Date(closingDateStr);
-    d.setFullYear(d.getFullYear()-1);
-    d.setDate(d.getDate()+1);
-    return '1 '+d.toLocaleString('en-ZA',{month:'long'})+' '+d.getFullYear();
+    const [yr, mo, dy] = closingDateStr.split('-').map(Number);
+    // Opening = (closing year - 1) + 1 day
+    // e.g. 28/02/2025 → 29/02/2024 → but 2024 is leap year so valid → 1/03/2024
+    // Build as a local date to avoid UTC shift
+    const d = new Date(yr - 1, mo - 1, dy + 1); // month is 0-based
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
   }
   const pyOpenLabel = hasPY ? openingLabel(state.client.priorYearDate) : 'Opening balance';
   const cyOpenLabel = hasPY ? openingLabel(state.client.reportDate)    : 'Opening balance';
@@ -3994,81 +3998,50 @@ function renderSoCE(){
     //   Drawings (CY) = sum of debit lines in CY transactions only
     //   Opening balance = PY closing
 
-    // We need per-transaction breakdown for capital introduced / drawings.
-    // CY = transactions dated after priorYearDate (or all if no PY date) up to reportDate.
-    const cyStartDate = state.client.priorYearDate || '';
-    const cyEndDate   = state.client.reportDate || '';
-
-    function partnerMovements(acctName){
-      let cyCapIntro=0, cyDrawings=0;
-      (state.transactions||[]).forEach(txn=>{
-        const src  = txn.source||'';
-        const date = txn.date||'';
-        const isImport = src.includes('import');
-        if(isImport) return; // imports handled via balance snapshot
-        if(cyEndDate && date > cyEndDate) return;
-        if(cyStartDate && date <= cyStartDate) return; // strictly after PY end
-        txn.lines.forEach(l=>{
-          if(l.account !== acctName) return;
-          cyCapIntro += l.credit||0;
-          cyDrawings += l.debit||0;
-        });
-      });
-      return {cyCapIntro, cyDrawings};
-    }
-
-    // Build per-partner data
+    // Build per-partner data using NET movement (closing − opening − profitShare).
+    // This avoids distortion from rebalancing journals that move funds between capital accounts.
+    // The closing balance is authoritative (straight from ledger); movements are derived.
     const pdata = partners.map(p=>{
       const acct = findCapitalAcct(p.name);
       const acctName = acct ? acct.name : null;
       const pct  = parsePct(p.pct);
       const cyBal = acctName && cy[acctName] ? (cy[acctName].cr - cy[acctName].dr) : 0;
       const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
-      // Opening = PY closing balance of their capital account
       const openBal = pyBal;
-      // Movements during CY
-      const {cyCapIntro, cyDrawings} = acctName ? partnerMovements(acctName) : {cyCapIntro:0, cyDrawings:0};
-      // Share of profit = cyProfit × pct (shown as separate row)
       const profitShare = Math.round(cyProfit * pct * 100) / 100;
-      // Closing = CY balance (authoritative — straight from ledger)
+      // Net capital movement = all movements other than profit allocation
+      const netCapMov = Math.round((cyBal - openBal - profitShare) * 100) / 100;
       const closBal = cyBal;
-      return {name:p.name, openBal, cyCapIntro, cyDrawings, profitShare, closBal, pct};
+      return {name:p.name, openBal, netCapMov, profitShare, closBal};
     });
 
-    // Render CY block (PY block when hasPY)
-    function renderBlock(label, data){
-      html += sectionLbl(label);
-      html += row('Balance at '+cyOpenLabel,  data.map(d=>d.openBal),    true,  false);
-      // Only show capital introduced row if any partner had introductions
-      if(data.some(d=>d.cyCapIntro>0)){
-        html += row('Capital introduced',      data.map(d=>d.cyCapIntro), false, true);
+    // PY block data
+    const pyPdata = hasPY ? partners.map(p=>{
+      const acct = findCapitalAcct(p.name);
+      const acctName = acct ? acct.name : null;
+      const pct  = parsePct(p.pct);
+      const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
+      const pyProfitShare = Math.round(pyProfit * pct * 100) / 100;
+      const pyOpenBal = Math.round((pyBal - pyProfitShare) * 100) / 100;
+      const pyNetCapMov = 0; // no two-years-ago data available
+      return {name:p.name, openBal:pyOpenBal, netCapMov:pyNetCapMov, profitShare:pyProfitShare, closBal:pyBal};
+    }) : [];
+
+    function renderBlock(yearLabel, openLabel, closeLabel, data){
+      html += sectionLbl(yearLabel);
+      html += row('Balance at '+openLabel,           data.map(d=>d.openBal),    true,  false);
+      if(data.some(d=>Math.abs(d.netCapMov)>0.5)){
+        html += row('Capital movements during year', data.map(d=>d.netCapMov), false, true);
       }
-      html += row('Share of profit / (loss)', data.map(d=>d.profitShare),false, true);
-      if(data.some(d=>d.cyDrawings>0)){
-        html += row('Drawings',               data.map(d=>-d.cyDrawings),false, true);
-      }
-      html += row('Balance at '+cyYear,       data.map(d=>d.closBal),    true,  false);
+      html += row('Share of profit / (loss)',        data.map(d=>d.profitShare),false, true);
+      html += row('Balance at '+closeLabel,          data.map(d=>d.closBal),    true,  false);
     }
 
-    // PY block: only render if hasPY
     if(hasPY){
-      // For PY block we'd need PY-specific movements — show simplified opening→closing
-      const pydata = partners.map(p=>{
-        const acct = findCapitalAcct(p.name);
-        const acctName = acct ? acct.name : null;
-        const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
-        const pct   = parsePct(p.pct);
-        const pyProfitShare = Math.round(pyProfit * pct * 100) / 100;
-        return {openBal:pyBal-pyProfitShare, cyCapIntro:0, cyDrawings:0, profitShare:pyProfitShare, closBal:pyBal};
-      });
-      html += sectionLbl('Year ended '+pyYear);
-      html += row('Balance at '+pyOpenLabel, pydata.map(d=>d.openBal),    true,  false);
-      html += row('Share of profit / (loss)',pydata.map(d=>d.profitShare), false, true);
-      html += row('Balance at '+pyYear,      pydata.map(d=>d.closBal),    true,  false);
+      renderBlock('Year ended '+pyYear, pyOpenLabel, pyYear, pyPdata);
       html += spacer();
     }
-
-    renderBlock('Year ended '+cyYear, pdata);
+    renderBlock('Year ended '+cyYear, cyOpenLabel, cyYear, pdata);
 
     // Fallback message if no partners configured
     if(partners.length===0){
@@ -4698,10 +4671,17 @@ function renderBS(){
 
   // Equity
   let cyEqTot=0, pyEqTot=0, eqRows='';
+  const _bsET = (state.client&&state.client.entityType)||'company';
+  const _bsPartners = _bsET==='partnership' ? (state.afs&&state.afs.directors||[]).filter(d=>d.name) : [];
   state.accounts.filter(a=>a.cat==='Equity').forEach(a=>{
     const cyNet=cy[a.name].cr-cy[a.name].dr;
     const pyNet=py[a.name].cr-py[a.name].dr;
     if(Math.abs(cyNet)<0.005&&Math.abs(pyNet)<0.005) return;
+    // For partnership: only show accounts that match a partner's name
+    if(_bsET==='partnership' && _bsPartners.length>0){
+      const matchesPartner = _bsPartners.some(p=>a.name.toLowerCase().includes(p.name.toLowerCase()));
+      if(!matchesPartner) return;
+    }
     cyEqTot+=cyNet; pyEqTot+=pyNet;
     eqRows+=`<tr class="fs-row"><td class="indent">${a.name}</td>${getNoteRef(a.name)}<td class="num">${fmtPL(Math.round(cyNet))}</td>${hasPY?`<td class="num">${fmtPL(Math.round(pyNet))}</td>`:''}` + `</tr>`;
   });
@@ -7355,10 +7335,11 @@ function _setSaveState(msg){ document.getElementById('save-state').textContent =
 
 let _isDirty = false;
 function _markDirty(){
-  if(_isDirty) return; // already dirty, no need to re-mark
+  if(_isDirty) return;
   _isDirty = true;
   const ind = document.getElementById('unsaved-indicator');
-  if(ind) ind.style.display = '';
+  if(ind) ind.style.display = 'flex';
+  if(ind) ind.style.alignItems = 'center';
 }
 function _markClean(){
   _isDirty = false;
