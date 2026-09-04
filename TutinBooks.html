@@ -1133,6 +1133,12 @@
       <div class="card-title">AFS Settings</div>
 
       <div class="afs-section">
+        <div class="afs-section-title">Statements to Include</div>
+        <p class="settings-hint" style="margin-bottom:10px">Untick any section to exclude it from both the printed report and the index. Class P&L options only appear when multi-class tracking is enabled.</p>
+        <div id="afs-include-panel"></div>
+      </div>
+
+      <div class="afs-section">
         <div class="afs-section-title">DRAFT Watermark</div>
         <div class="draft-toggle">
           <label class="toggle-switch">
@@ -6399,11 +6405,17 @@ function ensureAFS(){
   ensurePolicySections();
   if(!state.afs.draft) state.afs.draft = false;
   if(!state.afs.engagementType) state.afs.engagementType = 'compilation';
-  // Reviewer details (stored per client, visible only when engagementType=review)
   if(!state.afs.reviewerName)     state.afs.reviewerName     = '';
   if(!state.afs.reviewerCreds)    state.afs.reviewerCreds    = '';
   if(!state.afs.reviewerPractice) state.afs.reviewerPractice = '';
   if(!state.afs.reviewerReg)      state.afs.reviewerReg      = '';
+  // Statements to include — all default true
+  if(!state.afs.include) state.afs.include = {};
+  const incDef = ['partnersReport','responsibilities','compilationReport','policies',
+                   'bs','pl','soce','cf','notes','classpl'];
+  incDef.forEach(k=>{ if(state.afs.include[k]===undefined) state.afs.include[k]=true; });
+  // Which classes to include in supplementary P&L (default: all)
+  if(!state.afs.includedClasses) state.afs.includedClasses = null; // null = all
 }
 
 function updateAFS(){
@@ -6423,6 +6435,18 @@ function updateAFS(){
   state.afs.reviewerCreds    = document.getElementById('afs-reviewer-creds').value;
   state.afs.reviewerPractice = document.getElementById('afs-reviewer-practice').value;
   state.afs.reviewerReg      = document.getElementById('afs-reviewer-reg').value;
+  // Save include flags
+  ['partnersReport','responsibilities','compilationReport','policies',
+   'bs','pl','soce','cf','notes','classpl'].forEach(k=>{
+    const el = document.getElementById('afs-inc-'+k);
+    if(el) state.afs.include[k] = el.checked;
+  });
+  // Save included classes
+  const clsChecks = document.querySelectorAll('.afs-inc-class');
+  if(clsChecks.length){
+    state.afs.includedClasses = [...clsChecks].filter(c=>c.checked).map(c=>c.dataset.classid);
+  }
+  _markDirty();
 }
 
 // ── Roll Forward ───────────────────────────────────────────────────────────
@@ -6614,7 +6638,6 @@ function populateAFSForm(){
   document.getElementById('afs-events').value           = state.afs.events        || d.events;
   document.getElementById('afs-dividends').value        = state.afs.dividends     || d.dividends;
   document.getElementById('afs-responsibilities').value = state.afs.responsibilities || d.responsibilities;
-  // Populate policies — then auto-correct BOP sentence if saved text contains the wrong variant
   let _savedPolicies = state.afs.policies || d.policies;
   document.getElementById('draft-toggle-cb').checked   = !!state.afs.draft;
   toggleDraft(!!state.afs.draft);
@@ -6627,6 +6650,57 @@ function populateAFSForm(){
   toggleReviewField();
   renderDirectorsTable();
   renderPolicySectionsUI();
+  renderAFSIncludePanel();
+}
+
+function renderAFSIncludePanel(){
+  ensureAFS();
+  const panel = document.getElementById('afs-include-panel');
+  if(!panel) return;
+  const inc = state.afs.include;
+  const et  = (state.client&&state.client.entityType)||'company';
+  const t   = _entityTerms();
+  const multiClass = !!(state.client&&state.client.multiClass);
+  const classes = (state.client&&state.client.classes)||[];
+  // Which classes are currently included (null = all)
+  const inclCls = state.afs.includedClasses; // null = all, array = specific IDs
+
+  const items = [
+    {key:'partnersReport',     label: t.reportTitle},
+    {key:'responsibilities',   label: t.respTitle},
+    {key:'compilationReport',  label: (state.afs.engagementType==='review') ? 'Independent Review Report' : 'Independent Preparation Report'},
+    {key:'policies',           label: 'Accounting Policies'},
+    {key:'bs',                 label: 'Statement of Financial Position'},
+    {key:'pl',                 label: 'Statement of Profit or Loss and Other Comprehensive Income'},
+    {key:'soce',               label: 'Statement of Changes in Equity'},
+    {key:'cf',                 label: 'Statement of Cash Flows'},
+    {key:'notes',              label: 'Notes to the Annual Financial Statements'},
+  ];
+  if(multiClass && classes.length){
+    items.push({key:'classpl', label: 'Supplementary P&L per Class'});
+  }
+
+  let html = items.map(item=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:13px">
+      <input type="checkbox" id="afs-inc-${item.key}" ${inc[item.key]!==false?'checked':''} onchange="updateAFS()" style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent)">
+      <span>${item.label}</span>
+    </label>`).join('');
+
+  // Class checklist (only shown if supplementary P&L is ticked and multi-class on)
+  if(multiClass && classes.length && inc['classpl']!==false){
+    html += `<div style="margin:8px 0 0 25px;padding:8px 12px;background:var(--surface);border-radius:var(--radius)">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px">Classes to include in supplementary P&L:</div>
+      ${classes.map(cls=>{
+        const isIncl = !inclCls || inclCls.includes(cls.id);
+        return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:12px">
+          <input type="checkbox" class="afs-inc-class" data-classid="${cls.id}" ${isIncl?'checked':''} onchange="updateAFS()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+          <span>${cls.name}</span>
+        </label>`;
+      }).join('')}
+    </div>`;
+  }
+
+  panel.innerHTML = html;
 }
 
 function toggleDraft(on){
@@ -6839,18 +6913,30 @@ function printFullAFS(){
       ${[s.address,s.phone,s.email,s.website].filter(Boolean).join(' · ')}
     </div>`;
 
-  // ── Index ──
-  const indexItems = [
-    [pluralise(_et.reportTitle), ''],
-    [pluralise(_et.respTitle), ''],
-    [isReview ? 'Independent Review Report' : 'Independent Preparation Report', ''],
-    ['Accounting Policies', ''],
-    ['Statement of Financial Position', ''],
-    ['Statement of Profit or Loss and Other Comprehensive Income', ''],
-    ['Statement of Changes in Equity', ''],
-    ['Statement of Cash Flows', ''],
-    ['Notes to the Annual Financial Statements', ''],
-  ];
+  // ── Resolve include flags (default all true) ──
+  ensureAFS();
+  const _inc = state.afs.include || {};
+  function _included(key){ return _inc[key] !== false; }
+
+  // ── Index — only lists what's actually included ──
+  const indexItems = [];
+  if(_included('partnersReport'))    indexItems.push([pluralise(_et.reportTitle), '']);
+  if(_included('responsibilities'))  indexItems.push([pluralise(_et.respTitle), '']);
+  if(_included('compilationReport')) indexItems.push([isReview ? 'Independent Review Report' : 'Independent Preparation Report', '']);
+  if(_included('policies'))          indexItems.push(['Accounting Policies', '']);
+  if(_included('bs'))                indexItems.push(['Statement of Financial Position', '']);
+  if(_included('pl'))                indexItems.push(['Statement of Profit or Loss and Other Comprehensive Income', '']);
+  if(_included('soce'))              indexItems.push(['Statement of Changes in Equity', '']);
+  if(_included('cf'))                indexItems.push(['Statement of Cash Flows', '']);
+  if(_included('notes'))             indexItems.push(['Notes to the Annual Financial Statements', '']);
+  const multiClassOn2 = !!(state.client&&state.client.multiClass);
+  const inclCls2 = state.afs.includedClasses;
+  const printClasses = multiClassOn2
+    ? (state.client.classes||[]).filter(c=> !inclCls2 || inclCls2.includes(c.id))
+    : [];
+  if(_included('classpl') && printClasses.length){
+    printClasses.forEach(cls=> indexItems.push(['Supplementary P&L — '+cls.name, '']));
+  }
   document.getElementById('print-index').innerHTML = `
     <div class="afs-print-heading">INDEX</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
@@ -6859,7 +6945,10 @@ function printFullAFS(){
     </table>`;
 
   // ── Directors' / Partners' / Proprietor's Report ──
-  ensureAFS();
+  const _prEl = document.getElementById('print-directors-report');
+  if(!_included('partnersReport')){
+    if(_prEl){ _prEl.innerHTML=''; _prEl.className=''; }
+  } else {
   const dirs = state.afs.directors||[];
   let dirTable = '';
   if(dirs.length){
@@ -6926,8 +7015,14 @@ function printFullAFS(){
     <div class="afs-print-body">${pluralise(fill(getAFS('events')))}</div>
     <div class="afs-print-section-title">${divDistLabel}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('dividends')))}</div>`;
+  if(_prEl) _prEl.className = 'print-section';
+  } // end _included('partnersReport')
 
   // ── Responsibilities & Approval ──
+  const _respEl = document.getElementById('print-responsibilities');
+  if(!_included('responsibilities')){
+    if(_respEl){ _respEl.innerHTML=''; _respEl.className=''; }
+  } else {
   const sigDate  = state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]';
   const sigPlace = state.afs.signingPlace || '[place]';
   // For company: only directors sign. For partnership: all named partners sign. For sole prop: proprietor signs.
@@ -6955,8 +7050,16 @@ function printFullAFS(){
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('responsibilities')))}</div>
     <div style="margin-top:16px">${sigBlocks}</div>`;
+  if(_respEl) _respEl.className = 'print-section';
+  } // end _included('responsibilities')
 
   // ── Preparation / Review Report ──
+  const _compEl  = document.getElementById('print-compilation');
+  const _comp2El = document.getElementById('print-compilation-2');
+  if(!_included('compilationReport')){
+    if(_compEl) { _compEl.innerHTML='';  _compEl.className=''; }
+    if(_comp2El){ _comp2El.innerHTML=''; _comp2El.className=''; }
+  } else {
   const reportTitle = isReview ? 'Independent Review Report' : 'Independent Preparation Report';
   const toTheLabel  = isSingleDirector ? _et.roleSCap : _et.toThe;
   const reportBody  = isReview
@@ -6992,9 +7095,15 @@ function printFullAFS(){
         ${sigPractice?`<div>${sigPractice}${sigReg?' Registration Number: '+sigReg:''}</div>`:''}
         <div>Date: ${today}</div>
       </div>`;
+    if(_compEl) _compEl.className = 'print-section';
   }
+  } // end _included('compilationReport')
 
   // ── Accounting Policies ──
+  const _polEl = document.getElementById('print-policies');
+  if(!_included('policies')){
+    if(_polEl){ _polEl.innerHTML=''; _polEl.className=''; }
+  } else {
   document.getElementById('print-policies').innerHTML = `
     <div class="afs-print-heading">Accounting Policies</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
@@ -7015,7 +7124,6 @@ function printFullAFS(){
           }).join('');
           text = text.replace('[RATES]', rateLines);
         }
-        // Each paragraph separated by blank line becomes its own <p>
         const paras = text.split(/\n\n+/).filter(p=>p.trim());
         out += '<div style="margin-top:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;border-bottom:1px solid var(--rule);padding-bottom:3px">'+def.title+'</div>';
         paras.forEach(p=>{ out += '<p style="margin:4px 0">'+p.replace(/\n/g,'<br>')+'</p>'; });
@@ -7023,10 +7131,11 @@ function printFullAFS(){
       });
       return out;
     })()}</div>`;
+  if(_polEl) _polEl.className = 'print-section';
+  } // end _included('policies')
 
   // ── Render all financial statements and clone into fs-print-wrap ──
   autoUpdateReportDate();
-  // Render combined P&L (no active class) first
   const savedActiveClass = _plActiveClass;
   _plActiveClass = null;
   renderBS(); renderPL(); renderCF(); renderSoCE(); renderNotes();
@@ -7035,11 +7144,9 @@ function printFullAFS(){
     if(el) el.textContent = '';
   });
 
-  // Clone FS views into the print wrapper so they print outside the app div
   const wrap = document.getElementById('fs-print-wrap');
   wrap.innerHTML = '';
 
-  // Helper: clone a view element into a new fs-page div
   function _clonePage(srcId){
     const src = document.getElementById(srcId);
     if(!src) return;
@@ -7052,13 +7159,13 @@ function printFullAFS(){
     wrap.appendChild(page);
   }
 
-  ['view-bs','view-pl','view-soce','view-cf','view-notes'].forEach(_clonePage);
+  if(_included('bs'))   _clonePage('view-bs');
+  if(_included('pl'))   _clonePage('view-pl');
+  if(_included('soce')) _clonePage('view-soce');
+  if(_included('cf'))   _clonePage('view-cf');
+  if(_included('notes'))_clonePage('view-notes');
 
-  // ── Multi-class supplementary P&L pages (after Notes) ──
-  const multiClassOn = !!(state.client&&state.client.multiClass);
-  const classes = (state.client&&state.client.classes)||[];
-  if(multiClassOn && classes.length > 0){
-    // Supplementary heading page divider
+  if(_included('classpl') && multiClassOn2 && printClasses.length){
     const divPage = document.createElement('div');
     divPage.className = 'fs-page';
     divPage.innerHTML = `<div class="fs-page-inner">
@@ -7077,14 +7184,11 @@ function printFullAFS(){
     </div>`;
     wrap.appendChild(divPage);
 
-    // Render and clone one P&L page per class
-    classes.forEach(cls=>{
+    printClasses.forEach(cls=>{
       _plActiveClass = cls.id;
       renderPL();
-      // Clear the print date line that renderPL sets (we handle header ourselves)
       const pdEl = document.getElementById('pl-print-date');
       if(pdEl) pdEl.textContent = '';
-      // Patch the client line to include class name
       const clEl = document.getElementById('pl-client-line');
       if(clEl) clEl.textContent = (clEl.textContent||'').replace(' | Class: '+cls.name,'') + ' | Class: '+cls.name;
 
@@ -7098,13 +7202,10 @@ function printFullAFS(){
       page.appendChild(inner);
       wrap.appendChild(page);
     });
-
-    // Restore combined P&L on screen
-    _plActiveClass = savedActiveClass;
-    renderPL();
-  } else {
-    _plActiveClass = savedActiveClass;
   }
+
+  _plActiveClass = savedActiveClass;
+  renderPL();
 
   document.documentElement.classList.add('print-all');
   const cleanup = ()=>{
