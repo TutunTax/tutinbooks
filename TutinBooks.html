@@ -39,8 +39,8 @@
   .sidebar-bottom{padding:8px 12px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
   .sidebar-bottom .btn{height:30px;font-size:12px;justify-content:flex-start;gap:6px;padding:0 10px;width:100%;}
   /* Unsaved changes indicator */
-  #unsaved-indicator{display:none;margin-top:4px;padding:4px 8px;background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;font-size:11px;font-weight:600;color:#b45309;text-align:center;animation:pulse-amber 2s ease-in-out infinite;}
-  @keyframes pulse-amber{0%,100%{opacity:1;}50%{opacity:.6;}}
+  #unsaved-indicator{display:none;}
+  @keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:.75;}}
 
   /* ── Top bar ── */
   .top-bar{position:fixed;top:0;left:210px;right:0;height:42px;background:var(--white);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 24px;z-index:90;gap:12px;}
@@ -51,6 +51,11 @@
   .main-wrap{flex:1;margin-left:210px;display:flex;flex-direction:column;min-height:100vh;padding-top:42px;}
   main{flex:1;padding:24px;max-width:1400px;width:100%;}
   .view{display:none;} .view.active{display:block;}
+  /* Views that need locked header + scrolling body */
+  .view-flex{display:none;flex-direction:column;height:calc(100vh - 42px - 48px);overflow:hidden;margin:-24px;}
+  .view-flex.active{display:flex;}
+  .view-flex-header{flex-shrink:0;padding:24px 24px 0;}
+  .view-flex-body{flex:1;overflow-y:auto;padding:12px 24px 24px;}
   .card{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;}
   .card-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:16px;}
   .client-line-screen{font-size:13px;color:var(--ink-light);margin:-10px 0 16px;font-weight:500;}
@@ -423,7 +428,6 @@
       </div>
       <button class="btn btn-ghost" onclick="saveAsFileJSON()">Save As…</button>
       <span id="save-state" style="font-size:10px;color:var(--ink-light);font-family:var(--mono);display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
-      <div id="unsaved-indicator">⚠ Unsaved changes</div>
     </div>
   </div>
 
@@ -530,6 +534,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
+  <div id="unsaved-indicator" style="display:none;margin-left:16px;padding:4px 14px;background:#dc2626;color:#fff;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:.03em;cursor:pointer;flex-shrink:0;animation:pulse-red 1.5s ease-in-out infinite" onclick="saveFileJSON()" title="Click to save now">⚠ Unsaved changes — click to save</div>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -586,46 +591,74 @@
   </div>
 
   <!-- TRANSACTIONS -->
-  <div class="view" id="view-txn">
-    <div class="card no-print">
-      <div class="card-title">New Journal Entry</div>
-      <div class="form-row">
-        <div class="form-group w140">
-          <label>Date</label>
-          <input type="text" id="txn-date" placeholder="YYYYMMDD" maxlength="10" oninput="_smartDateText(this)" style="font-family:var(--mono)">
+  <div class="view-flex" id="view-txn">
+    <!-- LOCKED: New Journal Entry -->
+    <div class="view-flex-header">
+      <div class="card no-print" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none">
+        <div class="card-title">New Journal Entry</div>
+        <div class="form-row">
+          <div class="form-group w140">
+            <label>Date</label>
+            <input type="text" id="txn-date" placeholder="YYYYMMDD" maxlength="10" oninput="_smartDateText(this)" style="font-family:var(--mono)">
+          </div>
+          <div class="form-group grow">
+            <label>Description / Reference</label>
+            <input type="text" id="txn-desc" placeholder="e.g. Rental income March 2025">
+          </div>
         </div>
-        <div class="form-group grow">
-          <label>Description / Reference</label>
-          <input type="text" id="txn-desc" placeholder="e.g. Rental income March 2025">
+        <table style="margin-bottom:12px" id="entry-table">
+          <thead><tr><th>Account</th><th id="entry-th-class" style="display:none;width:140px">Class</th><th style="width:160px">Payee</th><th style="width:140px" class="num">Debit</th><th style="width:140px" class="num">Credit</th><th style="width:36px" class="no-print"></th></tr></thead>
+          <tbody id="entry-lines"></tbody>
+        </table>
+        <div class="toolbar">
+          <button class="btn btn-ghost no-print" onclick="addLine()">+ Add Line</button>
+          <div class="spacer"></div>
+          <div id="entry-balance-bar" class="balance-bar err">
+            <span id="bal-label">Difference:</span>
+            <span class="bal-num" id="entry-diff">0.00</span>
+          </div>
+          <button class="btn btn-ghost no-print" onclick="openGJRecurringModal()">&#128260; Recurring&hellip;</button>
+          <button class="btn btn-primary" id="post-btn" onclick="postEntry()" disabled>Post Entry</button>
+        </div>
+        <div class="err-msg" id="entry-err"></div>
+      </div>
+      <!-- Search/filter bar — locked -->
+      <div class="card no-print" style="margin-bottom:0;border-top:none;border-top-left-radius:0;border-top-right-radius:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule);padding:12px 24px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:2;min-width:160px">
+            <label style="font-size:11px">Search description / account</label>
+            <input type="text" placeholder="Type to filter…" id="txn-search" oninput="renderTxns()"
+              style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
+          </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date from</label>
+            <input type="date" id="txn-f-from" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date to</label>
+            <input type="date" id="txn-f-to" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &gt;=</label>
+            <input type="number" id="txn-f-amin" placeholder="0.00" step="0.01" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &lt;=</label>
+            <input type="number" id="txn-f-amax" placeholder="0.00" step="0.01" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="_txnClearFilters()" style="height:28px;align-self:flex-end">Clear</button>
         </div>
       </div>
-      <table style="margin-bottom:12px" id="entry-table">
-        <thead><tr><th>Account</th><th id="entry-th-class" style="display:none;width:140px">Class</th><th style="width:160px">Payee</th><th style="width:140px" class="num">Debit</th><th style="width:140px" class="num">Credit</th><th style="width:36px" class="no-print"></th></tr></thead>
-        <tbody id="entry-lines"></tbody>
-      </table>
-      <div class="toolbar">
-        <button class="btn btn-ghost no-print" onclick="addLine()">+ Add Line</button>
-        <div class="spacer"></div>
-        <div id="entry-balance-bar" class="balance-bar err">
-          <span id="bal-label">Difference:</span>
-          <span class="bal-num" id="entry-diff">0.00</span>
-        </div>
-        <button class="btn btn-ghost no-print" onclick="openGJRecurringModal()">&#128260; Recurring&hellip;</button>
-        <button class="btn btn-primary" id="post-btn" onclick="postEntry()" disabled>Post Entry</button>
-      </div>
-      <div class="err-msg" id="entry-err"></div>
     </div>
-    <div class="card">
-      <div class="card-title">Posted Transactions</div>
-      <div class="toolbar no-print">
-        <div class="spacer"></div>
-        <input type="text" placeholder="Search…" id="txn-search" oninput="renderTxns()"
-          style="height:32px;padding:0 10px;border:1px solid var(--rule);border-radius:var(--radius);font-size:13px;width:200px">
+    <!-- SCROLLING: Posted Transactions -->
+    <div class="view-flex-body">
+      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:12px">
+        <div class="card-title" style="margin-bottom:8px">Posted Transactions</div>
+        <table>
+          <thead><tr><th style="width:95px">Date</th><th>Description</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th class="no-print" style="width:56px"></th></tr></thead>
+          <tbody id="txn-body"></tbody>
+        </table>
       </div>
-      <table>
-        <thead><tr><th style="width:95px">Date</th><th>Description</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th class="no-print" style="width:56px"></th></tr></thead>
-        <tbody id="txn-body"></tbody>
-      </table>
     </div>
   </div>
 
@@ -1511,205 +1544,233 @@
   </div>
 
   <!-- ══ SALES JOURNAL view ════════════════════════════════════ -->
-  <div class="view" id="view-salesjnl">
-    <div class="card">
-      <div class="toolbar">
-        <span style="font-size:15px;font-weight:600;color:var(--ink)">Sales Journal</span>
-        <div class="spacer"></div>
-        <button class="btn btn-ghost btn-sm" id="sjnl-recurring-btn" onclick="openRecurringModal('invoice')">🔁 Recurring…</button>
-        <button class="btn btn-ghost btn-sm" id="sjnl-add-btn" onclick="addSalesJnlRow()">+ Add Row</button>
-        <button class="btn btn-primary" id="sjnl-post-btn" onclick="postSalesJnl()">Post Selected</button>
-      </div>
-      <!-- Tabs -->
-      <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:16px">
-        <button id="sjnl-tab-draft" onclick="_sjnlSwitchTab('draft')"
-          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
-          Draft Entry
-        </button>
-        <button id="sjnl-tab-posted" onclick="_sjnlSwitchTab('posted')"
-          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
-          Posted
-        </button>
-      </div>
-      <!-- Draft entry panel -->
-      <div id="sjnl-draft-panel">
-        <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px">Tick rows to post. Each row creates one invoice posted to the GL.</p>
-        <div id="salesjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="sjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="sjnl-show-vat" onchange="renderSalesJnlTable()" style="width:14px;height:14px"> Show VAT column
-          </label>
-        </div>
-        <div style="overflow-x:auto">
-          <table id="sjnl-table" style="min-width:960px">
-            <thead><tr>
-              <th style="width:28px"><input type="checkbox" id="sjnl-select-all" onchange="_sjnlSelectAll(this.checked)" style="cursor:pointer"></th>
-              <th style="width:100px">Date</th>
-              <th style="width:90px">Invoice No.</th>
-              <th style="width:150px">Contact</th>
-              <th>Description</th>
-              <th style="width:130px">Account</th>
-              <th style="width:100px">Class</th>
-              <th class="num" style="width:110px">Amount (R)</th>
-              <th class="num" style="width:80px" id="sjnl-vat-header">VAT (R)</th>
-              <th style="width:30px"></th>
-            </tr></thead>
-            <tbody id="sjnl-body"></tbody>
-          </table>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600">
-          <span>Total excl: <span id="sjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
-          <span id="sjnl-total-vat-wrap" style="display:none">VAT: <span id="sjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
-          <span id="sjnl-total-incl-wrap" style="display:none">Total incl: <span id="sjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
-        </div>
-      </div>
-      <!-- Posted history panel -->
-      <div id="sjnl-posted-panel" style="display:none">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
-          <span>&#128190;</span>
-          <span>Invoices are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+  <div class="view-flex" id="view-salesjnl">
+    <!-- LOCKED HEADER -->
+    <div class="view-flex-header">
+      <div class="card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule)">
+        <div class="toolbar">
+          <span style="font-size:15px;font-weight:600;color:var(--ink)">Sales Journal</span>
           <div class="spacer"></div>
-          <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+          <button class="btn btn-ghost btn-sm" id="sjnl-recurring-btn" onclick="openRecurringModal('invoice')">🔁 Recurring…</button>
+          <button class="btn btn-ghost btn-sm" id="sjnl-add-btn" onclick="addSalesJnlRow()">+ Add Row</button>
+          <button class="btn btn-primary" id="sjnl-post-btn" onclick="postSalesJnl()">Post Selected</button>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface);border-radius:var(--radius)">
-          <div class="form-group" style="flex:1;min-width:160px">
-            <label style="font-size:11px">Search (no., contact, description, account)</label>
-            <input type="text" id="sjnl-f-text" placeholder="Type to filter..." oninput="_renderSjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date from</label>
-            <input type="date" id="sjnl-f-from" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date to</label>
-            <input type="date" id="sjnl-f-to" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &gt;=</label>
-            <input type="number" id="sjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &lt;=</label>
-            <input type="number" id="sjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="_sjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin:12px -24px 0">
+          <button id="sjnl-tab-draft" onclick="_sjnlSwitchTab('draft')"
+            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
+            Draft Entry
+          </button>
+          <button id="sjnl-tab-posted" onclick="_sjnlSwitchTab('posted')"
+            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
+            Posted
+          </button>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_sjnlUndoSelected()">&#8617; Undo Selected</button>
+        <!-- Draft controls (locked) -->
+        <div id="sjnl-draft-panel-header" style="padding-top:12px">
+          <p style="font-size:12px;color:var(--ink-light);margin-bottom:8px">Tick rows to post. Each row creates one invoice posted to the GL.</p>
+          <div id="salesjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:8px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="sjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="sjnl-show-vat" onchange="renderSalesJnlTable()" style="width:14px;height:14px"> Show VAT column
+            </label>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:16px;font-size:13px;font-weight:600" id="sjnl-running-totals">
+            <span>Total excl: <span id="sjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
+            <span id="sjnl-total-vat-wrap" style="display:none">VAT: <span id="sjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
+            <span id="sjnl-total-incl-wrap" style="display:none">Total incl: <span id="sjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
+          </div>
         </div>
-        <table style="width:100%">
-          <thead><tr>
-            <th style="width:28px"><input type="checkbox" id="sjnl-posted-select-all" onchange="_sjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
-            <th>No.</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
-            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
-          </tr></thead>
-          <tbody id="sjnl-posted-body"></tbody>
-        </table>
-        <div id="sjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        <!-- Posted filter controls (locked) -->
+        <div id="sjnl-posted-panel-header" style="display:none;padding-top:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
+            <span>&#128190;</span>
+            <span>Invoices are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+            <div class="spacer"></div>
+            <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0">
+            <div class="form-group" style="flex:1;min-width:160px">
+              <label style="font-size:11px">Search (no., contact, description, account)</label>
+              <input type="text" id="sjnl-f-text" placeholder="Type to filter..." oninput="_renderSjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
+            </div>
+            <div class="form-group" style="width:120px">
+              <label style="font-size:11px">Date from</label>
+              <input type="date" id="sjnl-f-from" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+            </div>
+            <div class="form-group" style="width:120px">
+              <label style="font-size:11px">Date to</label>
+              <input type="date" id="sjnl-f-to" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+            </div>
+            <div class="form-group" style="width:100px">
+              <label style="font-size:11px">Amount &gt;=</label>
+              <input type="number" id="sjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+            </div>
+            <div class="form-group" style="width:100px">
+              <label style="font-size:11px">Amount &lt;=</label>
+              <input type="number" id="sjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="_sjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_sjnlUndoSelected()">&#8617; Undo Selected</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- SCROLLING BODY -->
+    <div class="view-flex-body">
+      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:8px">
+        <!-- Draft table -->
+        <div id="sjnl-draft-panel">
+          <div style="overflow-x:auto">
+            <table id="sjnl-table" style="min-width:960px">
+              <thead><tr>
+                <th style="width:28px"><input type="checkbox" id="sjnl-select-all" onchange="_sjnlSelectAll(this.checked)" style="cursor:pointer"></th>
+                <th style="width:100px">Date</th>
+                <th style="width:90px">Invoice No.</th>
+                <th style="width:150px">Contact</th>
+                <th>Description</th>
+                <th style="width:130px">Account</th>
+                <th style="width:100px">Class</th>
+                <th class="num" style="width:110px">Amount (R)</th>
+                <th class="num" style="width:80px" id="sjnl-vat-header">VAT (R)</th>
+                <th style="width:30px"></th>
+              </tr></thead>
+              <tbody id="sjnl-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Posted table -->
+        <div id="sjnl-posted-panel" style="display:none">
+          <table style="width:100%">
+            <thead><tr>
+              <th style="width:28px"><input type="checkbox" id="sjnl-posted-select-all" onchange="_sjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
+              <th>No.</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
+              <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
+            </tr></thead>
+            <tbody id="sjnl-posted-body"></tbody>
+          </table>
+          <div id="sjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- ══ PURCHASES JOURNAL view ════════════════════════════════ -->
-  <div class="view" id="view-purjnl">
-    <div class="card">
-      <div class="toolbar">
-        <span style="font-size:15px;font-weight:600;color:var(--ink)">Purchases Journal</span>
-        <div class="spacer"></div>
-        <button class="btn btn-ghost btn-sm" id="pjnl-recurring-btn" onclick="openRecurringModal('bill')">🔁 Recurring…</button>
-        <button class="btn btn-ghost btn-sm" id="pjnl-add-btn" onclick="addPurJnlRow()">+ Add Row</button>
-        <button class="btn btn-primary" id="purjnl-post-btn" onclick="postPurJnl()">Post Selected</button>
-      </div>
-      <!-- Tabs -->
-      <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:16px">
-        <button id="pjnl-tab-draft" onclick="_pjnlSwitchTab('draft')"
-          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
-          Draft Entry
-        </button>
-        <button id="pjnl-tab-posted" onclick="_pjnlSwitchTab('posted')"
-          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
-          Posted
-        </button>
-      </div>
-      <!-- Draft entry panel -->
-      <div id="pjnl-draft-panel">
-        <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px">Tick rows to post. Each row creates one bill posted to the GL.</p>
-        <div id="purjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="pjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" id="pjnl-show-vat" onchange="renderPurJnlTable()" style="width:14px;height:14px"> Show VAT column
-          </label>
-        </div>
-        <div style="overflow-x:auto">
-          <table id="pjnl-table" style="min-width:960px">
-            <thead><tr>
-              <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
-              <th style="width:100px">Date</th>
-              <th style="width:90px">Supplier Ref</th>
-              <th style="width:150px">Contact</th>
-              <th>Description</th>
-              <th style="width:130px">Account</th>
-              <th style="width:100px">Class</th>
-              <th class="num" style="width:110px">Amount (R)</th>
-              <th class="num" style="width:80px" id="pjnl-vat-header">VAT (R)</th>
-              <th style="width:30px"></th>
-            </tr></thead>
-            <tbody id="pjnl-body"></tbody>
-          </table>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600">
-          <span>Total excl: <span id="pjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
-          <span id="pjnl-total-vat-wrap" style="display:none">VAT: <span id="pjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
-          <span id="pjnl-total-incl-wrap" style="display:none">Total incl: <span id="pjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
-        </div>
-      </div>
-      <!-- Posted history panel -->
-      <div id="pjnl-posted-panel" style="display:none">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
-          <span>&#128190;</span>
-          <span>Bills are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+  <div class="view-flex" id="view-purjnl">
+    <!-- LOCKED HEADER -->
+    <div class="view-flex-header">
+      <div class="card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule)">
+        <div class="toolbar">
+          <span style="font-size:15px;font-weight:600;color:var(--ink)">Purchases Journal</span>
           <div class="spacer"></div>
-          <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+          <button class="btn btn-ghost btn-sm" id="pjnl-recurring-btn" onclick="openRecurringModal('bill')">🔁 Recurring…</button>
+          <button class="btn btn-ghost btn-sm" id="pjnl-add-btn" onclick="addPurJnlRow()">+ Add Row</button>
+          <button class="btn btn-primary" id="purjnl-post-btn" onclick="postPurJnl()">Post Selected</button>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface);border-radius:var(--radius)">
-          <div class="form-group" style="flex:1;min-width:160px">
-            <label style="font-size:11px">Search (ref, contact, description, account)</label>
-            <input type="text" id="pjnl-f-text" placeholder="Type to filter..." oninput="_renderPjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date from</label>
-            <input type="date" id="pjnl-f-from" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date to</label>
-            <input type="date" id="pjnl-f-to" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &gt;=</label>
-            <input type="number" id="pjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &lt;=</label>
-            <input type="number" id="pjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="_pjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin:12px -24px 0">
+          <button id="pjnl-tab-draft" onclick="_pjnlSwitchTab('draft')"
+            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
+            Draft Entry
+          </button>
+          <button id="pjnl-tab-posted" onclick="_pjnlSwitchTab('posted')"
+            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
+            Posted
+          </button>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_pjnlUndoSelected()">&#8617; Undo Selected</button>
+        <!-- Draft controls (locked) -->
+        <div id="pjnl-draft-panel-header" style="padding-top:12px">
+          <p style="font-size:12px;color:var(--ink-light);margin-bottom:8px">Tick rows to post. Each row creates one bill posted to the GL.</p>
+          <div id="purjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:8px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="pjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="pjnl-show-vat" onchange="renderPurJnlTable()" style="width:14px;height:14px"> Show VAT column
+            </label>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:16px;font-size:13px;font-weight:600">
+            <span>Total excl: <span id="pjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
+            <span id="pjnl-total-vat-wrap" style="display:none">VAT: <span id="pjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
+            <span id="pjnl-total-incl-wrap" style="display:none">Total incl: <span id="pjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
+          </div>
         </div>
-        <table style="width:100%">
-          <thead><tr>
-            <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
-            <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
-            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
-          </tr></thead>
-          <tbody id="pjnl-posted-body"></tbody>
-        </table>
-        <div id="pjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        <!-- Posted filter controls (locked) -->
+        <div id="pjnl-posted-panel-header" style="display:none;padding-top:12px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
+            <span>&#128190;</span>
+            <span>Bills are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+            <div class="spacer"></div>
+            <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0">
+            <div class="form-group" style="flex:1;min-width:160px">
+              <label style="font-size:11px">Search (ref, contact, description, account)</label>
+              <input type="text" id="pjnl-f-text" placeholder="Type to filter..." oninput="_renderPjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
+            </div>
+            <div class="form-group" style="width:120px">
+              <label style="font-size:11px">Date from</label>
+              <input type="date" id="pjnl-f-from" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+            </div>
+            <div class="form-group" style="width:120px">
+              <label style="font-size:11px">Date to</label>
+              <input type="date" id="pjnl-f-to" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+            </div>
+            <div class="form-group" style="width:100px">
+              <label style="font-size:11px">Amount &gt;=</label>
+              <input type="number" id="pjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+            </div>
+            <div class="form-group" style="width:100px">
+              <label style="font-size:11px">Amount &lt;=</label>
+              <input type="number" id="pjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="_pjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_pjnlUndoSelected()">&#8617; Undo Selected</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- SCROLLING BODY -->
+    <div class="view-flex-body">
+      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:8px">
+        <!-- Draft table -->
+        <div id="pjnl-draft-panel">
+          <div style="overflow-x:auto">
+            <table id="pjnl-table" style="min-width:960px">
+              <thead><tr>
+                <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
+                <th style="width:100px">Date</th>
+                <th style="width:90px">Supplier Ref</th>
+                <th style="width:150px">Contact</th>
+                <th>Description</th>
+                <th style="width:130px">Account</th>
+                <th style="width:100px">Class</th>
+                <th class="num" style="width:110px">Amount (R)</th>
+                <th class="num" style="width:80px" id="pjnl-vat-header">VAT (R)</th>
+                <th style="width:30px"></th>
+              </tr></thead>
+              <tbody id="pjnl-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Posted table -->
+        <div id="pjnl-posted-panel" style="display:none">
+          <table style="width:100%">
+            <thead><tr>
+              <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
+              <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
+              <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
+            </tr></thead>
+            <tbody id="pjnl-posted-body"></tbody>
+          </table>
+          <div id="pjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -2492,7 +2553,7 @@ const TAG = {
 };
 
 function showView(id,btn){
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.view,.view-flex').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.sidebar-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
@@ -2882,13 +2943,25 @@ function postEntry(){
 
 // ── Transactions ───────────────────────────────────────────────────────────
 function renderTxns(){
-  const search=(document.getElementById('txn-search')?.value||'').toLowerCase();
+  const search  = (document.getElementById('txn-search')?.value||'').toLowerCase();
+  const fFrom   = document.getElementById('txn-f-from')?.value||'';
+  const fTo     = document.getElementById('txn-f-to')?.value||'';
+  const fAmin   = parseFloat(document.getElementById('txn-f-amin')?.value)||null;
+  const fAmax   = parseFloat(document.getElementById('txn-f-amax')?.value)||null;
   const tbody=document.getElementById('txn-body');
   tbody.innerHTML='';
   let count=0;
   [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(txn=>{
+    if(fFrom && txn.date < fFrom) return;
+    if(fTo   && txn.date > fTo)   return;
     const match=(txn.date+txn.desc+txn.lines.map(l=>l.account).join('')).toLowerCase().includes(search);
     if(!match)return;
+    // Amount filter: check if any line matches
+    if(fAmin!==null||fAmax!==null){
+      const maxAmt = Math.max(...txn.lines.map(l=>Math.max(l.debit||0,l.credit||0)));
+      if(fAmin!==null && maxAmt < fAmin) return;
+      if(fAmax!==null && maxAmt > fAmax) return;
+    }
     txn.lines.forEach((line,li)=>{
       count++;
       const tr=document.createElement('tr');
@@ -9803,13 +9876,23 @@ function _sjnlSwitchTab(tab){
   const pt = document.getElementById('sjnl-tab-posted');
   if(dt){ dt.style.color=isDraft?'var(--accent)':'var(--ink-light)'; dt.style.borderBottomColor=isDraft?'var(--accent)':'transparent'; dt.style.fontWeight=isDraft?'600':'500'; }
   if(pt){ pt.style.color=!isDraft?'var(--accent)':'var(--ink-light)'; pt.style.borderBottomColor=!isDraft?'var(--accent)':'transparent'; pt.style.fontWeight=!isDraft?'600':'500'; }
-  // Panel visibility
+  // Panel visibility (body)
   const dp=document.getElementById('sjnl-draft-panel'); if(dp) dp.style.display=isDraft?'':'none';
   const pp=document.getElementById('sjnl-posted-panel'); if(pp) pp.style.display=!isDraft?'':'none';
+  // Header panel visibility
+  const dph=document.getElementById('sjnl-draft-panel-header'); if(dph) dph.style.display=isDraft?'':'none';
+  const pph=document.getElementById('sjnl-posted-panel-header'); if(pph) pph.style.display=!isDraft?'':'none';
   // Toolbar button visibility
   ['sjnl-recurring-btn','sjnl-add-btn','sjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
   if(!isDraft) _renderSjnlPosted();
   else renderSalesJnlTable();
+}
+
+function _txnClearFilters(){
+  ['txn-search','txn-f-from','txn-f-to','txn-f-amin','txn-f-amax'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  renderTxns();
 }
 
 function _sjnlClearFilters(){
@@ -10048,6 +10131,9 @@ function _pjnlSwitchTab(tab){
   if(pt){ pt.style.color=!isDraft?'var(--accent)':'var(--ink-light)'; pt.style.borderBottomColor=!isDraft?'var(--accent)':'transparent'; pt.style.fontWeight=!isDraft?'600':'500'; }
   const dp=document.getElementById('pjnl-draft-panel'); if(dp) dp.style.display=isDraft?'':'none';
   const pp=document.getElementById('pjnl-posted-panel'); if(pp) pp.style.display=!isDraft?'':'none';
+  // Header panel visibility
+  const dph=document.getElementById('pjnl-draft-panel-header'); if(dph) dph.style.display=isDraft?'':'none';
+  const pph=document.getElementById('pjnl-posted-panel-header'); if(pph) pph.style.display=!isDraft?'':'none';
   ['pjnl-recurring-btn','pjnl-add-btn','purjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
   if(!isDraft) _renderPjnlPosted();
   else renderPurJnlTable();
