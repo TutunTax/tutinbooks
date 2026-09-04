@@ -169,7 +169,7 @@
     html.print-all .app{display:none !important;}
     html.print-all .print-section{display:block !important;}
     html.print-all .print-cover{display:flex !important;}
-    html.print-all #fs-print-wrap{display:block !important;}
+    html.print-all #fs-print-wrap{display:block !important;page-break-before:always;}
     /* Non-print-all: hide print sections in print too */
     html:not(.print-all) .print-section{display:none !important;}
     html:not(.print-all) #fs-print-wrap{display:none !important;}
@@ -178,9 +178,9 @@
     html.print-mgmt .print-section{display:none !important;}
     html.print-mgmt .print-cover{display:none !important;}
     html.print-mgmt #fs-print-wrap{display:block !important;}
-    #fs-print-wrap .fs-page{page-break-before:always;padding:20px 0 0 0;}
-    #fs-print-wrap .fs-page:first-child{page-break-before:avoid;}
-    #fs-print-wrap .fs-page:last-child{page-break-after:avoid;}
+    #fs-print-wrap .fs-page{page-break-before:always;break-before:page;padding:20px 0 0 0;}
+    #fs-print-wrap .fs-page:first-child{page-break-before:avoid;break-before:avoid;}
+    #fs-print-wrap .fs-page:last-child{page-break-after:avoid;break-after:avoid;}
     #fs-print-wrap .fs-page-inner{page-break-inside:auto;}
     #fs-print-wrap .no-print{display:none !important;height:0 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
     #fs-print-wrap .card{padding-bottom:0 !important;}
@@ -196,6 +196,13 @@
     .ppe-table tr{page-break-inside:avoid;break-inside:avoid;}
     .fs-group-header,.fs-subtotal,.fs-total{page-break-after:avoid;break-after:avoid;}
     .fs-row{page-break-inside:avoid;break-inside:avoid;}
+    /* SoCE: shrink to fit when many equity columns */
+    #view-soce table, #soce-table{font-size:9px !important;table-layout:fixed;width:100% !important;}
+    #view-soce table th, #soce-table th{font-size:8px !important;padding:4px 3px !important;word-break:break-word;hyphens:auto;}
+    #view-soce table td, #soce-table td{font-size:9px !important;padding:4px 3px !important;}
+    #fs-print-wrap #soce-table{font-size:9px !important;}
+    #fs-print-wrap #soce-table th{font-size:8px !important;padding:4px 3px !important;word-break:break-word;hyphens:auto;}
+    #fs-print-wrap #soce-table td{padding:4px 3px !important;}
   }
   .print-header{display:none;}
   .print-header h2{font-size:18px;font-weight:700;margin-bottom:2px;}
@@ -264,6 +271,9 @@
   @media print{
     body.show-draft .draft-watermark{display:block !important;}
     html.print-all .print-section{display:block !important;page-break-before:always;padding:0 0 20px;}
+    html.print-all .print-cover{page-break-before:avoid !important;page-break-after:always;}
+    html.print-all #print-index{page-break-before:always;}
+    html.print-all #print-compilation-2:empty{display:none !important;page-break-before:avoid;}
     html.print-all .print-cover{display:flex !important;}
   }
   .draft-watermark{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;font-weight:900;color:rgba(180,83,9,.12);pointer-events:none;z-index:9999;letter-spacing:.1em;white-space:nowrap;}
@@ -3930,70 +3940,135 @@ function renderSoCE(){
   const pyProfit = pyInc-pyExp;
 
   if(soceET==='partnership'){
-    // ── Partnership: one column per Equity account ──
-    const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
-    // cols = label + one per equity account + total
-    const cols = 1 + eqAccts.length + 1;
+    // ── Partnership SoCE: one column per partner, read directly from their capital accounts ──
+    // Partners come from state.afs.directors. Their capital account is identified by matching
+    // the partner's full name inside an Equity category account name.
+    const partners = (state.afs&&state.afs.directors||[]).filter(d=>d.name);
+
+    // Find the capital account for each partner: first Equity account whose name contains
+    // the partner's name (case-insensitive). Falls back to null if not found.
+    function findCapitalAcct(partnerName){
+      const lc = partnerName.toLowerCase();
+      return state.accounts.find(a=>a.cat==='Equity' && a.name.toLowerCase().includes(lc)) || null;
+    }
+
+    // Parse pct string "50%" → 0.5. Default to equal split if missing/unparseable.
+    function parsePct(pctStr){
+      const n = parseFloat((pctStr||'').replace('%',''));
+      return isNaN(n) ? (1/Math.max(partners.length,1)) : n/100;
+    }
+
+    const cols = 1 + partners.length + 1; // label + partner cols + total
+
+    // Helpers
     function nc(v,bold){ const s=bold?' style="font-weight:700"':''; return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`; }
-    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
-    function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
-    function sectionLabel(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
+    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;white-space:normal;word-break:break-word;line-height:1.4">${txt}</th>`; }
+    function labelTh(){ return `<th style="font-size:11px;font-weight:600;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:120px"></th>`; }
+    function sectionLbl(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
     function spacer(){ return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`; }
-
-    // Headers: one column per equity account
-    html += `<tr>${labelTh()}${eqAccts.map(a=>th(a.name.replace(/—/g,'<br>').replace(/ /g,'&nbsp;')+'<br><span style="font-weight:400">R</span>')).join('')}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
-
-    function partnerBalanceRow(label, cyVals, bold){
-      const tot = cyVals.reduce((s,v)=>s+v,0);
-      const b = bold ? ' style="font-weight:700"' : '';
-      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
-        +cyVals.map(v=>nc(v,bold)).join('')
-        +nc(tot,bold)
-        +`</tr>`;
-    }
-    function partnerProfitRow(cyVals){
-      const tot = cyVals.reduce((s,v)=>s+v,0);
-      return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
-        +cyVals.map(v=>nc(v)).join('')
-        +nc(tot)
-        +`</tr>`;
+    function row(label, vals, bold, indent){
+      const tot = vals.reduce((s,v)=>s+v,0);
+      const b = bold?' style="font-weight:700"':'';
+      const pad = bold ? '10' : (indent ? '24' : '10');
+      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${pad}px">${bold?`<strong>${label}</strong>`:label}</td>`
+        + vals.map(v=>nc(v,bold)).join('')
+        + nc(tot,bold)
+        + `</tr>`;
     }
 
-    // Compute balances per equity account
-    function getVals(balObj){ return eqAccts.map(a=>{ const b=balObj[a.name]; return (b?b.cr-b.dr:0); }); }
+    // Column headers: partner names
+    html += `<tr>${labelTh()}${partners.map(p=>th(p.name+'<br><span style="font-weight:400">R</span>')).join('')}${th('Total<br><span style="font-weight:400">R</span>')}</tr>`;
 
-    if(hasPY){
-      // PY opening = PY closing - PY profit distributed proportionally to retained-earnings-like accounts
-      // Simple approach: PY opening per account = PY closing balance - PY profit (allocated to non-share-cap accounts)
-      const pyClosVals = getVals(py);
-      const pyOpenVals = pyClosVals.map((v,i)=>{
-        const a = eqAccts[i];
-        const isCapital = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
-        return isCapital ? v : v - pyProfit/Math.max(1, eqAccts.filter(x=>!x.name.toLowerCase().includes('share')&&!x.name.toLowerCase().includes('member')&&!x.name.toLowerCase().includes('capital')).length);
+    // Compute per-partner figures from their capital accounts
+    // getBalancesSplit() returns cy/py as cumulative account totals
+    // For each capital account:
+    //   CY closing balance = cy[acct].cr - cy[acct].dr
+    //   PY closing balance = py[acct].cr - py[acct].dr
+    //   Capital introduced (CY) = sum of credit lines in CY transactions only
+    //   Drawings (CY) = sum of debit lines in CY transactions only
+    //   Opening balance = PY closing
+
+    // We need per-transaction breakdown for capital introduced / drawings.
+    // CY = transactions dated after priorYearDate (or all if no PY date) up to reportDate.
+    const cyStartDate = state.client.priorYearDate || '';
+    const cyEndDate   = state.client.reportDate || '';
+
+    function partnerMovements(acctName){
+      let cyCapIntro=0, cyDrawings=0;
+      (state.transactions||[]).forEach(txn=>{
+        const src  = txn.source||'';
+        const date = txn.date||'';
+        const isImport = src.includes('import');
+        if(isImport) return; // imports handled via balance snapshot
+        if(cyEndDate && date > cyEndDate) return;
+        if(cyStartDate && date <= cyStartDate) return; // strictly after PY end
+        txn.lines.forEach(l=>{
+          if(l.account !== acctName) return;
+          cyCapIntro += l.credit||0;
+          cyDrawings += l.debit||0;
+        });
       });
-      const pyProfitVals = eqAccts.map(()=>0); pyProfitVals[Math.max(0,eqAccts.length-1)] = pyProfit;
-      html += sectionLabel('Year ended '+pyYear);
-      html += partnerBalanceRow('Balance at '+pyOpenLabel, pyOpenVals, true);
-      html += partnerProfitRow(pyProfitVals);
-      html += partnerBalanceRow('Balance at '+pyYear, pyClosVals, true);
+      return {cyCapIntro, cyDrawings};
+    }
+
+    // Build per-partner data
+    const pdata = partners.map(p=>{
+      const acct = findCapitalAcct(p.name);
+      const acctName = acct ? acct.name : null;
+      const pct  = parsePct(p.pct);
+      const cyBal = acctName && cy[acctName] ? (cy[acctName].cr - cy[acctName].dr) : 0;
+      const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
+      // Opening = PY closing balance of their capital account
+      const openBal = pyBal;
+      // Movements during CY
+      const {cyCapIntro, cyDrawings} = acctName ? partnerMovements(acctName) : {cyCapIntro:0, cyDrawings:0};
+      // Share of profit = cyProfit × pct (shown as separate row)
+      const profitShare = Math.round(cyProfit * pct * 100) / 100;
+      // Closing = CY balance (authoritative — straight from ledger)
+      const closBal = cyBal;
+      return {name:p.name, openBal, cyCapIntro, cyDrawings, profitShare, closBal, pct};
+    });
+
+    // Render CY block (PY block when hasPY)
+    function renderBlock(label, data){
+      html += sectionLbl(label);
+      html += row('Balance at '+cyOpenLabel,  data.map(d=>d.openBal),    true,  false);
+      // Only show capital introduced row if any partner had introductions
+      if(data.some(d=>d.cyCapIntro>0)){
+        html += row('Capital introduced',      data.map(d=>d.cyCapIntro), false, true);
+      }
+      html += row('Share of profit / (loss)', data.map(d=>d.profitShare),false, true);
+      if(data.some(d=>d.cyDrawings>0)){
+        html += row('Drawings',               data.map(d=>-d.cyDrawings),false, true);
+      }
+      html += row('Balance at '+cyYear,       data.map(d=>d.closBal),    true,  false);
+    }
+
+    // PY block: only render if hasPY
+    if(hasPY){
+      // For PY block we'd need PY-specific movements — show simplified opening→closing
+      const pydata = partners.map(p=>{
+        const acct = findCapitalAcct(p.name);
+        const acctName = acct ? acct.name : null;
+        const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
+        const pct   = parsePct(p.pct);
+        const pyProfitShare = Math.round(pyProfit * pct * 100) / 100;
+        return {openBal:pyBal-pyProfitShare, cyCapIntro:0, cyDrawings:0, profitShare:pyProfitShare, closBal:pyBal};
+      });
+      html += sectionLbl('Year ended '+pyYear);
+      html += row('Balance at '+pyOpenLabel, pydata.map(d=>d.openBal),    true,  false);
+      html += row('Share of profit / (loss)',pydata.map(d=>d.profitShare), false, true);
+      html += row('Balance at '+pyYear,      pydata.map(d=>d.closBal),    true,  false);
       html += spacer();
     }
-    const cyClosVals = getVals(cy).map((v,i)=>{
-      const a=eqAccts[i];
-      const isCapital=a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
-      return isCapital ? v : v+cyProfit;
-    });
-    const pyClosVals2 = getVals(py);
-    const cyOpenVals = pyClosVals2.map((v,i)=>{
-      const a=eqAccts[i];
-      const isCapital=a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member')||a.name.toLowerCase().includes('capital');
-      return isCapital ? v : v+pyProfit;
-    });
-    const cyProfitVals = eqAccts.map(()=>0); cyProfitVals[Math.max(0,eqAccts.length-1)] = cyProfit;
-    html += sectionLabel('Year ended '+cyYear);
-    html += partnerBalanceRow('Balance at '+cyOpenLabel, cyOpenVals, true);
-    html += partnerProfitRow(cyProfitVals);
-    html += partnerBalanceRow('Balance at '+cyYear, cyClosVals, true);
+
+    renderBlock('Year ended '+cyYear, pdata);
+
+    // Fallback message if no partners configured
+    if(partners.length===0){
+      html += `<tr><td colspan="${cols}" style="padding:16px;text-align:center;color:var(--ink-light);font-size:13px">
+        Add partners in AFS Settings → Partners to populate this statement.</td></tr>`;
+    }
 
   } else {
     // ── Company / Sole Prop: original 2-column layout ──
@@ -5004,14 +5079,15 @@ function renderPPENote(note, i, container){
     </tr>
   </tfoot></table>`;
 
-  // ── Table 2: Movement reconciliation (only when PY data exists) ──
-  if(hasPY){
+  // ── Table 2: Movement reconciliation ──
+  // Always shown. When no prior year date, opening CV = 0 (first year of operations).
+  {
     const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
-    const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+    const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Opening Balance';
 
     // Per-row movement figures:
-    // Opening CV  = PY cost − PY dep
-    // Additions   = CY cost − PY cost  (increase in cost account)
+    // Opening CV  = PY cost − PY dep  (zero when no prior year)
+    // Additions   = CY cost − PY cost  (increase in cost account during the year)
     // Dep charge  = CY dep − PY dep    (increase in accumulated dep)
     // Disposals   = manual input stored on row (r.disposals)
     // Closing CV  = Opening + Additions − Disposals − Dep charge
@@ -6950,6 +7026,9 @@ function printFullAFS(){
 
   // ── Render all financial statements and clone into fs-print-wrap ──
   autoUpdateReportDate();
+  // Render combined P&L (no active class) first
+  const savedActiveClass = _plActiveClass;
+  _plActiveClass = null;
   renderBS(); renderPL(); renderCF(); renderSoCE(); renderNotes();
   ['pl-print-date','bs-print-date','cf-print-date','soce-print-date','notes-print-date'].forEach(id=>{
     const el = document.getElementById(id);
@@ -6959,8 +7038,10 @@ function printFullAFS(){
   // Clone FS views into the print wrapper so they print outside the app div
   const wrap = document.getElementById('fs-print-wrap');
   wrap.innerHTML = '';
-  ['view-bs','view-pl','view-soce','view-cf','view-notes'].forEach((id,idx)=>{
-    const src = document.getElementById(id);
+
+  // Helper: clone a view element into a new fs-page div
+  function _clonePage(srcId){
+    const src = document.getElementById(srcId);
     if(!src) return;
     const page = document.createElement('div');
     page.className = 'fs-page';
@@ -6969,7 +7050,61 @@ function printFullAFS(){
     inner.innerHTML = src.innerHTML;
     page.appendChild(inner);
     wrap.appendChild(page);
-  });
+  }
+
+  ['view-bs','view-pl','view-soce','view-cf','view-notes'].forEach(_clonePage);
+
+  // ── Multi-class supplementary P&L pages (after Notes) ──
+  const multiClassOn = !!(state.client&&state.client.multiClass);
+  const classes = (state.client&&state.client.classes)||[];
+  if(multiClassOn && classes.length > 0){
+    // Supplementary heading page divider
+    const divPage = document.createElement('div');
+    divPage.className = 'fs-page';
+    divPage.innerHTML = `<div class="fs-page-inner">
+      <div style="padding-bottom:10px;border-bottom:2px solid var(--ink);margin-bottom:20px">
+        <h2 style="font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0">
+          SUPPLEMENTARY INFORMATION
+        </h2>
+        <p style="font-size:11px;color:var(--ink-light);margin:4px 0 0">
+          Statement of Profit or Loss by Class — ${cn}${reg?' | Reg No: '+reg:''} | For the period ended ${pe}
+        </p>
+      </div>
+      <p style="font-size:12px;color:var(--ink-light)">
+        The following pages present the statement of profit or loss analysed by class of activity.
+        These supplementary schedules form part of the annual financial statements.
+      </p>
+    </div>`;
+    wrap.appendChild(divPage);
+
+    // Render and clone one P&L page per class
+    classes.forEach(cls=>{
+      _plActiveClass = cls.id;
+      renderPL();
+      // Clear the print date line that renderPL sets (we handle header ourselves)
+      const pdEl = document.getElementById('pl-print-date');
+      if(pdEl) pdEl.textContent = '';
+      // Patch the client line to include class name
+      const clEl = document.getElementById('pl-client-line');
+      if(clEl) clEl.textContent = (clEl.textContent||'').replace(' | Class: '+cls.name,'') + ' | Class: '+cls.name;
+
+      const src = document.getElementById('view-pl');
+      if(!src) return;
+      const page = document.createElement('div');
+      page.className = 'fs-page';
+      const inner = document.createElement('div');
+      inner.className = 'fs-page-inner';
+      inner.innerHTML = src.innerHTML;
+      page.appendChild(inner);
+      wrap.appendChild(page);
+    });
+
+    // Restore combined P&L on screen
+    _plActiveClass = savedActiveClass;
+    renderPL();
+  } else {
+    _plActiveClass = savedActiveClass;
+  }
 
   document.documentElement.classList.add('print-all');
   const cleanup = ()=>{
