@@ -3544,16 +3544,42 @@ function renderPL(){
   const othExpExTaxCY = othExp.cyTotal - taxCY;
   const othExpExTaxPY = othExp.pyTotal - taxPY;
 
-  // Re-build Other Expenses rows excluding Income Tax Expense
+  // Re-build Other Expenses rows excluding Income Tax Expense, collapsing PPE depreciation accounts
+  // Source of truth for which accounts to collapse: expAcct fields on PPE note rows.
+  // Fall back to naming convention (costAcct "— Cost" → "— Depreciation") for rows without expAcct.
+  const depAcctsToCollapse = new Set();
+  if(state.notes) state.notes.filter(n=>n.type==='ppe'&&n.rows).forEach(n=>{
+    n.rows.forEach(r=>{
+      if(r.expAcct) { depAcctsToCollapse.add(r.expAcct); return; }
+      if(r.costAcct){ const d=r.costAcct.replace(/ — Cost$/, ' — Depreciation'); if(coaNames.has(d)) depAcctsToCollapse.add(d); }
+    });
+  });
+
   let othExpNonTaxRows = '';
+  let depCY=0, depPY=0, depAcctsList=[];
+
   [...state.accounts].filter(a=>a.cat==='Other Expense' && a.name!=='Income Tax Expense')
     .sort((x,y)=>x.name.localeCompare(y.name))
     .forEach(a=>{
-    const cyNet = cy[a.name].dr - cy[a.name].cr;
-    const pyNet = py[a.name].dr - py[a.name].cr;
-    if(Math.round(cyNet)===0 && Math.round(pyNet)===0) return;
-    othExpNonTaxRows += `<tr class="fs-row"><td class="indent">${a.name}</td>${getNoteRef(a.name)}${numCell(cyNet,false,[{name:a.name,cy:cyNet}],a.name)}${hasPY?numCell(pyNet):''}` + `</tr>`;
-  });
+      const cyNet = cy[a.name].dr - cy[a.name].cr;
+      const pyNet = py[a.name].dr - py[a.name].cr;
+      if(depAcctsToCollapse.has(a.name)){
+        depCY+=cyNet; depPY+=pyNet;
+        depAcctsList.push({name:a.name, cy:Math.round(cyNet)});
+        return; // accumulate, don't render individually
+      }
+      if(Math.round(cyNet)===0 && Math.round(pyNet)===0) return;
+      othExpNonTaxRows += `<tr class="fs-row"><td class="indent">${a.name}</td>${getNoteRef(a.name)}${numCell(cyNet,false,[{name:a.name,cy:cyNet}],a.name)}${hasPY?numCell(pyNet):''}` + `</tr>`;
+    });
+
+  // Emit single collapsed Depreciation line if any dep accounts had balances
+  if(Math.round(depCY)!==0 || Math.round(depPY)!==0){
+    const ppeNoteNum = firstPPENote && firstPPENote.noteNum;
+    const deprRef = ppeNoteNum
+      ? `<td class="note-ref"><a onclick="jumpToNote(${JSON.stringify(ppeNoteNum)})">${ppeNoteNum}</a></td>`
+      : '<td class="note-ref"></td>';
+    othExpNonTaxRows += `<tr class="fs-row"><td class="indent">Depreciation</td>${deprRef}${numCell(depCY,false,depAcctsList,'Depreciation')}${hasPY?numCell(depPY):''}` + `</tr>`;
+  }
 
   if(othExpNonTaxRows){
     html+=`<tr class="fs-group-header"><td colspan="${cols}">OTHER EXPENSES</td></tr>`;
@@ -4100,6 +4126,10 @@ function renderBS(){
   const allOverdraftNames = new Set([...cyOverdraftNames, ...pyOverdraftNames]);
 
   // Build overdraft rows for injection into Current Liabilities
+  const _cashNoteForOD = state.notes && state.notes.find(n=>n.type==='cash');
+  const _cashRefForOD  = _cashNoteForOD && _cashNoteForOD.noteNum
+    ? `<td class="note-ref"><a onclick="jumpToNote(${JSON.stringify(_cashNoteForOD.noteNum)})">${_cashNoteForOD.noteNum}</a></td>`
+    : '<td class="note-ref"></td>';
   let overdraftHtml='', overdraftCYTot=0, overdraftPYTot=0;
   allOverdraftNames.forEach(name=>{
     if(!cy[name]) return;
@@ -4109,7 +4139,7 @@ function renderBS(){
     const pyShow = pyOverdraftNames.has(name) ? pyCredit : 0;
     if(cyShow===0 && pyShow===0) return;
     overdraftCYTot += cyShow; overdraftPYTot += pyShow;
-    overdraftHtml += `<tr class="fs-row"><td class="indent">${name} — Bank Overdraft</td><td class="note-ref"></td>${numCell(cyShow,false,[{name:name,cy:cyShow}],name)}${hasPY?numCell(pyShow):''}` + `</tr>`;
+    overdraftHtml += `<tr class="fs-row"><td class="indent">${name} — Bank Overdraft</td>${_cashRefForOD}${numCell(cyShow,false,[{name:name,cy:cyShow}],name)}${hasPY?numCell(pyShow):''}` + `</tr>`;
   });
 
   // Combine cyFlipToLiab and cyOverdraftNames so section() excludes both from assets
@@ -4684,14 +4714,14 @@ function renderPPENote(note, i, container){
       <tbody>`;
 
     rows.forEach((r,ri)=>{
-      const openCV   = Math.round(costPY(r) - depPY(r));
-      const autoAdds = Math.round(costCY(r) - costPY(r));
+      const openCV   = costPY(r) - depPY(r);
+      const autoAdds = costCY(r) - costPY(r);
       const hasManualAdds = r.additions !== undefined && r.additions !== '';
       const adds     = hasManualAdds ? parseFloat(r.additions)||0 : autoAdds;
       const expBal   = r.expAcct && cy[r.expAcct] ? Math.abs(cy[r.expAcct].dr - cy[r.expAcct].cr) : 0;
-      const depChg   = Math.round(expBal);
+      const depChg   = expBal;
       const disp     = parseFloat((note.rows[ri].disposals)||0);
-      const closeCV  = Math.round(openCV + adds - disp - depChg);
+      const closeCV  = costCY(r) - depCY(r);
 
       totOpen+=openCV; totAdd+=adds; totDisp+=disp; totDep+=depChg; totClose+=closeCV;
 
