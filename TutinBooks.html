@@ -2978,6 +2978,7 @@ function getBalancesSplit(overrideDate){
     });
   });
   const pyDate = state.client.priorYearDate||'';
+  const pyStartDate = state.client.pyStartDate||'';
   const cyDate = overrideDate || state.client.reportDate||'';
   const BS_CATS_LOCAL = new Set(['Cash and Cash Equivalents','Current Asset','Non-Current Asset','Shareholders Loan Asset','Current Liability','Non-Current Liability','Shareholders Loan Liability','Equity']);
   state.transactions.forEach(txn=>{
@@ -2987,6 +2988,9 @@ function getBalancesSplit(overrideDate){
     // For non-import (cashbook/manual) transactions: skip anything beyond the report date
     const isManual = !isPYImport && !isCYImport;
     if(isManual && cyDate && txn.date > cyDate) return; // ← date cutoff: exclude post-period transactions
+    // pyStartDate lower bound: exclude manual journals that predate the PY window
+    // (journals from years before PY — they corrected older imports no longer in this file)
+    if(isManual && pyStartDate && txn.date < pyStartDate) return;
     const isManualPY = isManual && pyDate && txn.date <= pyDate;
     txn.lines.forEach(l=>{
       if(!py[l.account]) return;
@@ -3347,6 +3351,7 @@ function getBalancesSplitByClass(classId){
   const py={}, cy={};
   state.accounts.forEach(a=>{ py[a.name]={dr:0,cr:0,cat:a.cat}; cy[a.name]={dr:0,cr:0,cat:a.cat}; });
   const pyDate = state.client.priorYearDate||'';
+  const pyStartDate = state.client.pyStartDate||'';
   const cyDate = state.client.reportDate||'';
   const PL_CATS = new Set(['Income','Other Income','Cost of Sales','Expense','Other Expense']);
   state.transactions.forEach(txn=>{
@@ -3355,6 +3360,7 @@ function getBalancesSplitByClass(classId){
     const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
     const isManual = !isPYImport && !isCYImport;
     if(isManual && cyDate && txn.date > cyDate) return;
+    if(isManual && pyStartDate && txn.date < pyStartDate) return;
     const isManualPY = isManual && pyDate && txn.date <= pyDate;
     // For import transactions, classId filtering does not apply (no line-level classId on imports)
     // For manual/doc transactions, filter by classId on each line
@@ -6101,6 +6107,15 @@ function rollForward(){
   // ══ EXECUTE ROLL FORWARD ═══════════════════════════════════════════════
 
   // 1. Dates
+  // Store the start of the PY window (day after old PY date) so getBalancesSplit
+  // can exclude manual journals that predate the PY period after repeated roll forwards.
+  if(oldPYDate){
+    const oldPY = new Date(oldPYDate);
+    oldPY.setDate(oldPY.getDate() + 1);
+    state.client.pyStartDate = oldPY.toISOString().slice(0,10);
+  } else {
+    state.client.pyStartDate = '';
+  }
   state.client.reportDate    = newCYDate;
   state.client.reportDateManual = true;
   state.client.priorYearDate = newPYDate;
