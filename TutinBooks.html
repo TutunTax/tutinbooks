@@ -18,17 +18,17 @@
   .app{display:flex;min-height:100vh;}
 
   /* ── Sidebar ── */
-  .sidebar{width:210px;min-width:210px;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow:hidden;}
-  .sidebar-logo{display:flex;align-items:center;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--rule);flex-shrink:0;}
+  .sidebar{width:210px;min-width:210px;background:var(--white);border-right:1px solid var(--rule);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto;}
+  .sidebar-logo{display:flex;align-items:center;gap:8px;padding:14px 14px 10px;border-bottom:1px solid var(--rule);}
   .sidebar-logo img{height:32px;width:auto;}
   .sidebar-logo span{font-weight:600;letter-spacing:.04em;font-size:14px;}
-  .sidebar-file{padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--surface);flex-shrink:0;}
+  .sidebar-file{padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--surface);}
   .file-name{font-size:10px;color:var(--ink-light);font-family:var(--mono);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;}
   .sidebar-io{display:flex;flex-direction:column;gap:4px;}
   .sidebar-io .btn{height:30px;font-size:12px;justify-content:flex-start;gap:6px;padding:0 10px;width:100%;}
   .sidebar-io-row{display:flex;gap:4px;}
   .sidebar-io-row .btn{flex:1;}
-  .sidebar-nav{flex:1;padding:8px 0;overflow-y:auto;}
+  .sidebar-nav{flex:1;padding:8px 0;}
   .nav-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);padding:10px 14px 4px;margin-top:4px;}
   .nav-group-label:first-child{margin-top:0;}
   .sidebar-nav button{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;cursor:pointer;padding:7px 14px;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);text-align:left;transition:background .12s,color .12s;border-radius:0;}
@@ -36,11 +36,8 @@
   .sidebar-nav button.active{background:var(--accent-dim);color:var(--accent);font-weight:600;}
   .sidebar-nav button:disabled{opacity:.4;cursor:not-allowed;}
   .sidebar-nav button .nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
-  .sidebar-bottom{padding:8px 12px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+  .sidebar-bottom{padding:8px 12px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:4px;}
   .sidebar-bottom .btn{height:30px;font-size:12px;justify-content:flex-start;gap:6px;padding:0 10px;width:100%;}
-  /* Unsaved changes indicator */
-  #unsaved-indicator{display:none;}
-  @keyframes pulse-red{0%,100%{opacity:1;}50%{opacity:.75;}}
 
   /* ── Top bar ── */
   .top-bar{position:fixed;top:0;left:210px;right:0;height:42px;background:var(--white);border-bottom:1px solid var(--rule);display:flex;align-items:center;padding:0 24px;z-index:90;gap:12px;}
@@ -51,11 +48,6 @@
   .main-wrap{flex:1;margin-left:210px;display:flex;flex-direction:column;min-height:100vh;padding-top:42px;}
   main{flex:1;padding:24px;max-width:1400px;width:100%;}
   .view{display:none;} .view.active{display:block;}
-  /* Views that need locked header + scrolling body */
-  .view-flex{display:none;flex-direction:column;height:calc(100vh - 42px - 48px);overflow:hidden;margin:-24px;}
-  .view-flex.active{display:flex;}
-  .view-flex-header{flex-shrink:0;padding:24px 24px 0;}
-  .view-flex-body{flex:1;overflow-y:auto;padding:12px 24px 24px;}
   .card{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;}
   .card-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);margin-bottom:16px;}
   .client-line-screen{font-size:13px;color:var(--ink-light);margin:-10px 0 16px;font-weight:500;}
@@ -89,8 +81,8 @@
   .tag-exp{background:var(--amber-dim);color:var(--amber);}
   .tag-oe{background:var(--accent-dim);color:var(--accent);}
   .del-btn,.edit-btn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;transition:color .15s;padding:2px 4px;}
-  .del-btn{color:#bbb;} .del-btn:hover{color:var(--accent);}
-  .edit-btn{color:#aaa;} .edit-btn:hover{color:#1e40af;}
+  .del-btn{color:#ddd;} .del-btn:hover{color:var(--accent);}
+  .edit-btn{color:#ddd;} .edit-btn:hover{color:#1e40af;}
   .io-bar{display:flex;gap:8px;align-items:center;background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:10px 16px;margin-bottom:20px;font-size:13px;color:var(--ink-light);}
   .empty{text-align:center;padding:40px;color:var(--ink-light);font-size:13px;}
   .err-msg{color:var(--accent);font-size:12px;margin-top:4px;min-height:16px;}
@@ -120,34 +112,6 @@
   @media print {
     .sidebar,.top-bar,.io-bar,.toolbar,.no-print{display:none !important;}
     #gl-table th,#gl-table td{font-size:11px;padding:5px 8px;}
-  /* ── T-Account styles ── */
-  .t-account-wrap{margin-bottom:28px;break-inside:avoid;page-break-inside:avoid;}
-  .t-account{width:100%;border-collapse:collapse;border:2px solid var(--ink);font-size:12px;}
-  .t-account .t-title{background:var(--ink);color:#fff;font-weight:700;font-size:13px;letter-spacing:.04em;padding:8px 14px;text-align:center;}
-  .t-account .t-col-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--ink);color:var(--ink-light);}
-  .t-account .t-col-head.t-dr{text-align:left;border-right:2px solid var(--ink);}
-  .t-account .t-col-head.t-cr{text-align:left;}
-  .t-account td.t-dr-cell{border-right:2px solid var(--ink);padding:4px 6px;vertical-align:top;width:50%;}
-  .t-account td.t-cr-cell{padding:4px 6px;vertical-align:top;width:50%;}
-  .t-entry-table{width:100%;border-collapse:collapse;font-size:12px;}
-  .t-entry-table td{padding:2px 4px;vertical-align:top;border-bottom:1px dashed var(--rule);}
-  .t-entry-table tr:last-child td{border-bottom:none;}
-  .t-entry-table .col-date{white-space:nowrap;font-family:var(--mono);font-size:10px;color:var(--ink-light);width:72px;}
-  .t-entry-table .col-desc{word-break:break-word;}
-  .t-entry-table .col-desc.is-system{font-style:italic;color:var(--ink-light);}
-  .t-entry-table .col-amt{white-space:nowrap;font-family:var(--mono);text-align:right;width:90px;}
-  .t-account .t-total-row td{border-top:3px double var(--ink);padding:5px 10px;font-weight:700;font-family:var(--mono);}
-  .t-account .t-total-row td.t-dr-cell{text-align:right;border-right:2px solid var(--ink);}
-  .t-account .t-total-row td.t-cr-cell{text-align:right;}
-  .t-account .t-bal-row td{background:var(--surface);padding:5px 10px;font-size:11px;color:var(--ink-light);text-align:center;border-right:none;}
-  .t-empty{color:var(--ink-light);font-style:italic;font-size:11px;padding:6px 4px;}
-  @media print{
-    .t-account-wrap{break-inside:avoid;page-break-inside:avoid;}
-    .t-account{border:1.5pt solid #000;}
-    .t-account .t-title{background:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    .t-account .t-total-row td{border-top:3pt double #000;}
-    .t-entry-table td{border-bottom:1px dashed #ccc;}
-  }
     #gl-card{border:none;box-shadow:none;}
     .main-wrap{margin-left:0 !important;padding-top:0 !important;}
     main{max-width:100% !important;}
@@ -169,7 +133,7 @@
     html.print-all .app{display:none !important;}
     html.print-all .print-section{display:block !important;}
     html.print-all .print-cover{display:flex !important;}
-    html.print-all #fs-print-wrap{display:block !important;page-break-before:always;}
+    html.print-all #fs-print-wrap{display:block !important;}
     /* Non-print-all: hide print sections in print too */
     html:not(.print-all) .print-section{display:none !important;}
     html:not(.print-all) #fs-print-wrap{display:none !important;}
@@ -178,9 +142,9 @@
     html.print-mgmt .print-section{display:none !important;}
     html.print-mgmt .print-cover{display:none !important;}
     html.print-mgmt #fs-print-wrap{display:block !important;}
-    #fs-print-wrap .fs-page{page-break-before:always;break-before:page;padding:20px 0 0 0;}
-    #fs-print-wrap .fs-page:first-child{page-break-before:avoid;break-before:avoid;}
-    #fs-print-wrap .fs-page:last-child{page-break-after:avoid;break-after:avoid;}
+    #fs-print-wrap .fs-page{page-break-before:always;padding:20px 0 0 0;}
+    #fs-print-wrap .fs-page:first-child{page-break-before:avoid;}
+    #fs-print-wrap .fs-page:last-child{page-break-after:avoid;}
     #fs-print-wrap .fs-page-inner{page-break-inside:auto;}
     #fs-print-wrap .no-print{display:none !important;height:0 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
     #fs-print-wrap .card{padding-bottom:0 !important;}
@@ -196,13 +160,6 @@
     .ppe-table tr{page-break-inside:avoid;break-inside:avoid;}
     .fs-group-header,.fs-subtotal,.fs-total{page-break-after:avoid;break-after:avoid;}
     .fs-row{page-break-inside:avoid;break-inside:avoid;}
-    /* SoCE: shrink to fit when many equity columns */
-    #view-soce table, #soce-table{font-size:9px !important;table-layout:fixed;width:100% !important;}
-    #view-soce table th, #soce-table th{font-size:8px !important;padding:4px 3px !important;word-break:break-word;hyphens:auto;}
-    #view-soce table td, #soce-table td{font-size:9px !important;padding:4px 3px !important;}
-    #fs-print-wrap #soce-table{font-size:9px !important;}
-    #fs-print-wrap #soce-table th{font-size:8px !important;padding:4px 3px !important;word-break:break-word;hyphens:auto;}
-    #fs-print-wrap #soce-table td{padding:4px 3px !important;}
   }
   .print-header{display:none;}
   .print-header h2{font-size:18px;font-weight:700;margin-bottom:2px;}
@@ -271,9 +228,6 @@
   @media print{
     body.show-draft .draft-watermark{display:block !important;}
     html.print-all .print-section{display:block !important;page-break-before:always;padding:0 0 20px;}
-    html.print-all .print-cover{page-break-before:avoid !important;page-break-after:always;}
-    html.print-all #print-index{page-break-before:always;}
-    html.print-all #print-compilation-2:empty{display:none !important;page-break-before:avoid;}
     html.print-all .print-cover{display:flex !important;}
   }
   .draft-watermark{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;font-weight:900;color:rgba(180,83,9,.12);pointer-events:none;z-index:9999;letter-spacing:.1em;white-space:nowrap;}
@@ -544,7 +498,6 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <div id="unsaved-indicator" style="display:none;margin-left:16px;padding:4px 14px;background:#dc2626;color:#fff;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:.03em;cursor:pointer;flex-shrink:0;animation:pulse-red 1.5s ease-in-out infinite" onclick="saveFileJSON()" title="Click to save now">⚠ Unsaved changes — click to save</div>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -601,74 +554,46 @@
   </div>
 
   <!-- TRANSACTIONS -->
-  <div class="view-flex" id="view-txn">
-    <!-- LOCKED: New Journal Entry -->
-    <div class="view-flex-header">
-      <div class="card no-print" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none">
-        <div class="card-title">New Journal Entry</div>
-        <div class="form-row">
-          <div class="form-group w140">
-            <label>Date</label>
-            <input type="text" id="txn-date" placeholder="YYYYMMDD" maxlength="10" oninput="_smartDateText(this)" style="font-family:var(--mono)">
-          </div>
-          <div class="form-group grow">
-            <label>Description / Reference</label>
-            <input type="text" id="txn-desc" placeholder="e.g. Rental income March 2025">
-          </div>
+  <div class="view" id="view-txn">
+    <div class="card no-print">
+      <div class="card-title">New Journal Entry</div>
+      <div class="form-row">
+        <div class="form-group w140">
+          <label>Date</label>
+          <input type="text" id="txn-date" placeholder="YYYYMMDD" maxlength="10" oninput="_smartDateText(this)" style="font-family:var(--mono)">
         </div>
-        <table style="margin-bottom:12px" id="entry-table">
-          <thead><tr><th>Account</th><th id="entry-th-class" style="display:none;width:140px">Class</th><th style="width:160px">Payee</th><th style="width:140px" class="num">Debit</th><th style="width:140px" class="num">Credit</th><th style="width:36px" class="no-print"></th></tr></thead>
-          <tbody id="entry-lines"></tbody>
-        </table>
-        <div class="toolbar">
-          <button class="btn btn-ghost no-print" onclick="addLine()">+ Add Line</button>
-          <div class="spacer"></div>
-          <div id="entry-balance-bar" class="balance-bar err">
-            <span id="bal-label">Difference:</span>
-            <span class="bal-num" id="entry-diff">0.00</span>
-          </div>
-          <button class="btn btn-ghost no-print" onclick="openGJRecurringModal()">&#128260; Recurring&hellip;</button>
-          <button class="btn btn-primary" id="post-btn" onclick="postEntry()" disabled>Post Entry</button>
-        </div>
-        <div class="err-msg" id="entry-err"></div>
-      </div>
-      <!-- Search/filter bar — locked -->
-      <div class="card no-print" style="margin-bottom:0;border-top:none;border-top-left-radius:0;border-top-right-radius:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule);padding:12px 24px">
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
-          <div class="form-group" style="flex:2;min-width:160px">
-            <label style="font-size:11px">Search description / account</label>
-            <input type="text" placeholder="Type to filter…" id="txn-search" oninput="renderTxns()"
-              style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date from</label>
-            <input type="date" id="txn-f-from" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:120px">
-            <label style="font-size:11px">Date to</label>
-            <input type="date" id="txn-f-to" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &gt;=</label>
-            <input type="number" id="txn-f-amin" placeholder="0.00" step="0.01" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <div class="form-group" style="width:100px">
-            <label style="font-size:11px">Amount &lt;=</label>
-            <input type="number" id="txn-f-amax" placeholder="0.00" step="0.01" oninput="renderTxns()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="_txnClearFilters()" style="height:28px;align-self:flex-end">Clear</button>
+        <div class="form-group grow">
+          <label>Description / Reference</label>
+          <input type="text" id="txn-desc" placeholder="e.g. Rental income March 2025">
         </div>
       </div>
+      <table style="margin-bottom:12px" id="entry-table">
+        <thead><tr><th>Account</th><th id="entry-th-class" style="display:none;width:140px">Class</th><th style="width:160px">Payee</th><th style="width:140px" class="num">Debit</th><th style="width:140px" class="num">Credit</th><th style="width:36px" class="no-print"></th></tr></thead>
+        <tbody id="entry-lines"></tbody>
+      </table>
+      <div class="toolbar">
+        <button class="btn btn-ghost no-print" onclick="addLine()">+ Add Line</button>
+        <div class="spacer"></div>
+        <div id="entry-balance-bar" class="balance-bar err">
+          <span id="bal-label">Difference:</span>
+          <span class="bal-num" id="entry-diff">0.00</span>
+        </div>
+        <button class="btn btn-ghost no-print" onclick="openGJRecurringModal()">&#128260; Recurring&hellip;</button>
+        <button class="btn btn-primary" id="post-btn" onclick="postEntry()" disabled>Post Entry</button>
+      </div>
+      <div class="err-msg" id="entry-err"></div>
     </div>
-    <!-- SCROLLING: Posted Transactions -->
-    <div class="view-flex-body">
-      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:12px">
-        <div class="card-title" style="margin-bottom:8px">Posted Transactions</div>
-        <table>
-          <thead><tr><th style="width:95px">Date</th><th>Description</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th class="no-print" style="width:56px"></th></tr></thead>
-          <tbody id="txn-body"></tbody>
-        </table>
+    <div class="card">
+      <div class="card-title">Posted Transactions</div>
+      <div class="toolbar no-print">
+        <div class="spacer"></div>
+        <input type="text" placeholder="Search…" id="txn-search" oninput="renderTxns()"
+          style="height:32px;padding:0 10px;border:1px solid var(--rule);border-radius:var(--radius);font-size:13px;width:200px">
       </div>
+      <table>
+        <thead><tr><th style="width:95px">Date</th><th>Description</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th class="no-print" style="width:56px"></th></tr></thead>
+        <tbody id="txn-body"></tbody>
+      </table>
     </div>
   </div>
 
@@ -916,17 +841,10 @@
 
   <!-- P&L -->
   <div class="view" id="view-pl">
-    <div class="print-header">
-      <h2>STATEMENT OF PROFIT OR LOSS AND OTHER COMPREHENSIVE INCOME</h2>
-      <p id="pl-class-line" style="font-size:16px;font-weight:700;margin:2px 0 4px;display:none"></p>
-      <p id="pl-client-line"></p>
-      <p id="pl-print-date"></p>
-    </div>
+    <div class="print-header"><h2>STATEMENT OF PROFIT OR LOSS AND OTHER COMPREHENSIVE INCOME</h2><p id="pl-client-line"></p><p id="pl-print-date"></p></div>
     <div class="card">
       <div class="card-title">Statement of Profit or Loss and Other Comprehensive Income</div>
       <div id="pl-client-line-screen" class="client-line-screen no-print"></div>
-      <!-- Prominent class banner — visible on screen when a class is active -->
-      <div id="pl-class-banner" class="no-print" style="display:none;margin:-4px 0 14px;padding:8px 14px;background:var(--accent);color:#fff;border-radius:var(--radius);font-size:14px;font-weight:700;letter-spacing:.02em"></div>
       <!-- Class filter tabs — shown only when multi-class is enabled -->
       <div id="pl-class-tabs" class="no-print" style="display:none;margin-bottom:16px;border-bottom:2px solid var(--rule);display:flex;gap:0;flex-wrap:wrap"></div>
       <table id="pl-table"></table>
@@ -990,16 +908,6 @@
         <div class="form-group w180">
           <label>VAT Registration No.</label>
           <input type="text" id="client-vatno" placeholder="e.g. 4123456789" oninput="updateClientDetails()">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group w180">
-          <label>Entity Type</label>
-          <select id="client-entity-type" onchange="updateClientDetails();renderDirectorsTable();renderSoCE();" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
-            <option value="company">Company (Pty) Ltd / CC</option>
-            <option value="partnership">Partnership</option>
-            <option value="soleprop">Sole Proprietor</option>
-          </select>
         </div>
       </div>
       <div class="form-row">
@@ -1140,12 +1048,6 @@
       <div class="card-title">AFS Settings</div>
 
       <div class="afs-section">
-        <div class="afs-section-title">Statements to Include</div>
-        <p class="settings-hint" style="margin-bottom:10px">Untick any section to exclude it from both the printed report and the index. Class P&L options only appear when multi-class tracking is enabled.</p>
-        <div id="afs-include-panel"></div>
-      </div>
-
-      <div class="afs-section">
         <div class="afs-section-title">DRAFT Watermark</div>
         <div class="draft-toggle">
           <label class="toggle-switch">
@@ -1199,9 +1101,9 @@
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="people-section-title">Directors &amp; Shareholders</div>
+        <div class="afs-section-title">Directors & Shareholders</div>
         <table class="directors-table" id="directors-table">
-          <thead id="directors-thead"><tr>
+          <thead><tr>
             <th style="width:28%">Full Name</th>
             <th style="width:20%">Capacity</th>
             <th style="width:18%">ID Number</th>
@@ -1211,11 +1113,11 @@
           </tr></thead>
           <tbody id="directors-body"></tbody>
         </table>
-        <button class="btn btn-ghost btn-sm no-print" id="add-person-btn" onclick="addDirector()">+ Add Director / Shareholder</button>
+        <button class="btn btn-ghost btn-sm no-print" onclick="addDirector()">+ Add Director / Shareholder</button>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="approval-section-title">Directors' Approval — Signing Details</div>
+        <div class="afs-section-title">Directors' Approval — Signing Details</div>
         <div class="form-row">
           <div class="form-group grow">
             <label>Signing Director</label>
@@ -1233,32 +1135,32 @@
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="report-section-title">Directors' Report — Nature of Business</div>
+        <div class="afs-section-title">Directors' Report — Nature of Business</div>
         <textarea class="afs-textarea" id="afs-nature" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="sharecap-section-title">Directors' Report — Share Capital</div>
+        <div class="afs-section-title">Directors' Report — Share Capital</div>
         <textarea class="afs-textarea" id="afs-sharecap" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="goingconcern-section-title">Directors' Report — Going Concern</div>
+        <div class="afs-section-title">Directors' Report — Going Concern</div>
         <textarea class="afs-textarea" id="afs-goingconcern" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="events-section-title">Directors' Report — Events after Reporting Date</div>
+        <div class="afs-section-title">Directors' Report — Events after Reporting Date</div>
         <textarea class="afs-textarea" id="afs-events" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="dividends-section-title">Directors' Report — Dividends</div>
+        <div class="afs-section-title">Directors' Report — Dividends</div>
         <textarea class="afs-textarea" id="afs-dividends" oninput="updateAFS()"></textarea>
       </div>
 
       <div class="afs-section">
-        <div class="afs-section-title" id="responsibilities-section-title">Directors' Responsibilities & Approval — Body Text</div>
+        <div class="afs-section-title">Directors' Responsibilities & Approval — Body Text</div>
         <textarea class="afs-textarea tall" id="afs-responsibilities" oninput="updateAFS()"></textarea>
       </div>
 
@@ -1281,20 +1183,7 @@
 
     <!-- Controls (screen only) -->
     <div class="card no-print" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="card-title" style="margin:0">General Ledger</div>
-        <!-- View mode toggle -->
-        <div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden">
-          <button id="gl-mode-columnar" onclick="glSetMode('columnar')"
-            style="padding:5px 14px;font-size:12px;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit">
-            ≡ Columnar
-          </button>
-          <button id="gl-mode-taccount" onclick="glSetMode('taccount')"
-            style="padding:5px 14px;font-size:12px;border:none;cursor:pointer;background:transparent;color:var(--ink-light);font-family:inherit">
-            ⊤ T-Account
-          </button>
-        </div>
-      </div>
+      <div class="card-title">General Ledger</div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
         <div class="form-group" style="min-width:220px;flex:1">
           <label>Account</label>
@@ -1310,27 +1199,22 @@
           <label>To</label>
           <input type="date" id="gl-to" onchange="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
         </div>
-        <div class="form-group" style="min-width:160px;flex:1">
+        <div class="form-group" style="min-width:180px;flex:1">
           <label>Search description</label>
           <input type="text" id="gl-search" placeholder="Filter by description…" oninput="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
-        </div>
-        <div class="form-group" id="gl-class-wrap" style="min-width:160px;flex:1;display:none">
-          <label>Class</label>
-          <select id="gl-class" onchange="renderGL()" style="width:100%;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:var(--radius)">
-            <option value="">— all classes —</option>
-          </select>
         </div>
         <button class="btn btn-ghost" onclick="glClearFilters()" style="height:34px;font-size:12px">Clear filters</button>
       </div>
     </div>
 
-    <!-- Ledger card — Columnar view -->
+    <!-- Ledger card -->
     <div class="card" id="gl-card" style="padding:0">
       <!-- Account heading (print + screen) -->
       <div id="gl-heading" style="padding:16px 20px 12px;border-bottom:2px solid var(--ink)">
         <div style="font-size:16px;font-weight:700;letter-spacing:.04em" id="gl-account-title">Select an account</div>
         <div style="font-size:12px;color:var(--ink-light);margin-top:2px" id="gl-period-label"></div>
       </div>
+
       <div style="overflow-x:auto">
         <table id="gl-table" style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
@@ -1348,11 +1232,6 @@
         </table>
       </div>
       <div id="gl-empty" style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px;display:none">No transactions in this range.</div>
-    </div>
-
-    <!-- T-Account card -->
-    <div id="gl-taccount-card" style="display:none">
-      <div id="gl-taccount-body"></div>
     </div>
   </div>
 
@@ -1567,233 +1446,205 @@
   </div>
 
   <!-- ══ SALES JOURNAL view ════════════════════════════════════ -->
-  <div class="view-flex" id="view-salesjnl">
-    <!-- LOCKED HEADER -->
-    <div class="view-flex-header">
-      <div class="card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule)">
-        <div class="toolbar">
-          <span style="font-size:15px;font-weight:600;color:var(--ink)">Sales Journal</span>
-          <div class="spacer"></div>
-          <button class="btn btn-ghost btn-sm" id="sjnl-recurring-btn" onclick="openRecurringModal('invoice')">🔁 Recurring…</button>
-          <button class="btn btn-ghost btn-sm" id="sjnl-add-btn" onclick="addSalesJnlRow()">+ Add Row</button>
-          <button class="btn btn-primary" id="sjnl-post-btn" onclick="postSalesJnl()">Post Selected</button>
+  <div class="view" id="view-salesjnl">
+    <div class="card">
+      <div class="toolbar">
+        <span style="font-size:15px;font-weight:600;color:var(--ink)">Sales Journal</span>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm" id="sjnl-recurring-btn" onclick="openRecurringModal('invoice')">🔁 Recurring…</button>
+        <button class="btn btn-ghost btn-sm" id="sjnl-add-btn" onclick="addSalesJnlRow()">+ Add Row</button>
+        <button class="btn btn-primary" id="sjnl-post-btn" onclick="postSalesJnl()">Post Selected</button>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:16px">
+        <button id="sjnl-tab-draft" onclick="_sjnlSwitchTab('draft')"
+          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
+          Draft Entry
+        </button>
+        <button id="sjnl-tab-posted" onclick="_sjnlSwitchTab('posted')"
+          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
+          Posted
+        </button>
+      </div>
+      <!-- Draft entry panel -->
+      <div id="sjnl-draft-panel">
+        <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px">Tick rows to post. Each row creates one invoice posted to the GL.</p>
+        <div id="salesjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="sjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="sjnl-show-vat" onchange="renderSalesJnlTable()" style="width:14px;height:14px"> Show VAT column
+          </label>
         </div>
-        <!-- Tabs -->
-        <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin:12px -24px 0">
-          <button id="sjnl-tab-draft" onclick="_sjnlSwitchTab('draft')"
-            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
-            Draft Entry
-          </button>
-          <button id="sjnl-tab-posted" onclick="_sjnlSwitchTab('posted')"
-            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
-            Posted
-          </button>
+        <div style="overflow-x:auto">
+          <table id="sjnl-table" style="min-width:960px">
+            <thead><tr>
+              <th style="width:28px"><input type="checkbox" id="sjnl-select-all" onchange="_sjnlSelectAll(this.checked)" style="cursor:pointer"></th>
+              <th style="width:100px">Date</th>
+              <th style="width:90px">Invoice No.</th>
+              <th style="width:150px">Contact</th>
+              <th>Description</th>
+              <th style="width:130px">Account</th>
+              <th style="width:100px">Class</th>
+              <th class="num" style="width:110px">Amount (R)</th>
+              <th class="num" style="width:80px" id="sjnl-vat-header">VAT (R)</th>
+              <th style="width:30px"></th>
+            </tr></thead>
+            <tbody id="sjnl-body"></tbody>
+          </table>
         </div>
-        <!-- Draft controls (locked) -->
-        <div id="sjnl-draft-panel-header" style="padding-top:12px">
-          <p style="font-size:12px;color:var(--ink-light);margin-bottom:8px">Tick rows to post. Each row creates one invoice posted to the GL.</p>
-          <div id="salesjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:8px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" id="sjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" id="sjnl-show-vat" onchange="renderSalesJnlTable()" style="width:14px;height:14px"> Show VAT column
-            </label>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:16px;font-size:13px;font-weight:600" id="sjnl-running-totals">
-            <span>Total excl: <span id="sjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
-            <span id="sjnl-total-vat-wrap" style="display:none">VAT: <span id="sjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
-            <span id="sjnl-total-incl-wrap" style="display:none">Total incl: <span id="sjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
-          </div>
-        </div>
-        <!-- Posted filter controls (locked) -->
-        <div id="sjnl-posted-panel-header" style="display:none;padding-top:12px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
-            <span>&#128190;</span>
-            <span>Invoices are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
-            <div class="spacer"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0">
-            <div class="form-group" style="flex:1;min-width:160px">
-              <label style="font-size:11px">Search (no., contact, description, account)</label>
-              <input type="text" id="sjnl-f-text" placeholder="Type to filter..." oninput="_renderSjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
-            </div>
-            <div class="form-group" style="width:120px">
-              <label style="font-size:11px">Date from</label>
-              <input type="date" id="sjnl-f-from" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-            </div>
-            <div class="form-group" style="width:120px">
-              <label style="font-size:11px">Date to</label>
-              <input type="date" id="sjnl-f-to" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-            </div>
-            <div class="form-group" style="width:100px">
-              <label style="font-size:11px">Amount &gt;=</label>
-              <input type="number" id="sjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-            </div>
-            <div class="form-group" style="width:100px">
-              <label style="font-size:11px">Amount &lt;=</label>
-              <input type="number" id="sjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="_sjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-            <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_sjnlUndoSelected()">&#8617; Undo Selected</button>
-          </div>
+        <div style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600">
+          <span>Total excl: <span id="sjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
+          <span id="sjnl-total-vat-wrap" style="display:none">VAT: <span id="sjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
+          <span id="sjnl-total-incl-wrap" style="display:none">Total incl: <span id="sjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
         </div>
       </div>
-    </div>
-    <!-- SCROLLING BODY -->
-    <div class="view-flex-body">
-      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:8px">
-        <!-- Draft table -->
-        <div id="sjnl-draft-panel">
-          <div style="overflow-x:auto">
-            <table id="sjnl-table" style="min-width:960px">
-              <thead><tr>
-                <th style="width:28px"><input type="checkbox" id="sjnl-select-all" onchange="_sjnlSelectAll(this.checked)" style="cursor:pointer"></th>
-                <th style="width:100px">Date</th>
-                <th style="width:90px">Invoice No.</th>
-                <th style="width:150px">Contact</th>
-                <th>Description</th>
-                <th style="width:130px">Account</th>
-                <th style="width:100px">Class</th>
-                <th class="num" style="width:110px">Amount (R)</th>
-                <th class="num" style="width:80px" id="sjnl-vat-header">VAT (R)</th>
-                <th style="width:30px"></th>
-              </tr></thead>
-              <tbody id="sjnl-body"></tbody>
-            </table>
+      <!-- Posted history panel -->
+      <div id="sjnl-posted-panel" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
+          <span>&#128190;</span>
+          <span>Invoices are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+          <div class="spacer"></div>
+          <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface);border-radius:var(--radius)">
+          <div class="form-group" style="flex:1;min-width:160px">
+            <label style="font-size:11px">Search (no., contact, description, account)</label>
+            <input type="text" id="sjnl-f-text" placeholder="Type to filter..." oninput="_renderSjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
           </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date from</label>
+            <input type="date" id="sjnl-f-from" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date to</label>
+            <input type="date" id="sjnl-f-to" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &gt;=</label>
+            <input type="number" id="sjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &lt;=</label>
+            <input type="number" id="sjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderSjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="_sjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
         </div>
-        <!-- Posted table -->
-        <div id="sjnl-posted-panel" style="display:none">
-          <table style="width:100%">
-            <thead><tr>
-              <th style="width:28px"><input type="checkbox" id="sjnl-posted-select-all" onchange="_sjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
-              <th>No.</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
-              <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
-            </tr></thead>
-            <tbody id="sjnl-posted-body"></tbody>
-          </table>
-          <div id="sjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_sjnlUndoSelected()">&#8617; Undo Selected</button>
         </div>
+        <table style="width:100%">
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" id="sjnl-posted-select-all" onchange="_sjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
+            <th>No.</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
+            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
+          </tr></thead>
+          <tbody id="sjnl-posted-body"></tbody>
+        </table>
+        <div id="sjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
       </div>
     </div>
   </div>
 
   <!-- ══ PURCHASES JOURNAL view ════════════════════════════════ -->
-  <div class="view-flex" id="view-purjnl">
-    <!-- LOCKED HEADER -->
-    <div class="view-flex-header">
-      <div class="card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:2px solid var(--rule)">
-        <div class="toolbar">
-          <span style="font-size:15px;font-weight:600;color:var(--ink)">Purchases Journal</span>
-          <div class="spacer"></div>
-          <button class="btn btn-ghost btn-sm" id="pjnl-recurring-btn" onclick="openRecurringModal('bill')">🔁 Recurring…</button>
-          <button class="btn btn-ghost btn-sm" id="pjnl-add-btn" onclick="addPurJnlRow()">+ Add Row</button>
-          <button class="btn btn-primary" id="purjnl-post-btn" onclick="postPurJnl()">Post Selected</button>
+  <div class="view" id="view-purjnl">
+    <div class="card">
+      <div class="toolbar">
+        <span style="font-size:15px;font-weight:600;color:var(--ink)">Purchases Journal</span>
+        <div class="spacer"></div>
+        <button class="btn btn-ghost btn-sm" id="pjnl-recurring-btn" onclick="openRecurringModal('bill')">🔁 Recurring…</button>
+        <button class="btn btn-ghost btn-sm" id="pjnl-add-btn" onclick="addPurJnlRow()">+ Add Row</button>
+        <button class="btn btn-primary" id="purjnl-post-btn" onclick="postPurJnl()">Post Selected</button>
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin-bottom:16px">
+        <button id="pjnl-tab-draft" onclick="_pjnlSwitchTab('draft')"
+          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
+          Draft Entry
+        </button>
+        <button id="pjnl-tab-posted" onclick="_pjnlSwitchTab('posted')"
+          style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
+          Posted
+        </button>
+      </div>
+      <!-- Draft entry panel -->
+      <div id="pjnl-draft-panel">
+        <p style="font-size:12px;color:var(--ink-light);margin-bottom:12px">Tick rows to post. Each row creates one bill posted to the GL.</p>
+        <div id="purjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="pjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="pjnl-show-vat" onchange="renderPurJnlTable()" style="width:14px;height:14px"> Show VAT column
+          </label>
         </div>
-        <!-- Tabs -->
-        <div style="display:flex;gap:0;border-bottom:2px solid var(--rule);margin:12px -24px 0">
-          <button id="pjnl-tab-draft" onclick="_pjnlSwitchTab('draft')"
-            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;color:var(--accent);border-bottom:3px solid var(--accent);margin-bottom:-2px">
-            Draft Entry
-          </button>
-          <button id="pjnl-tab-posted" onclick="_pjnlSwitchTab('posted')"
-            style="padding:7px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;color:var(--ink-light);border-bottom:3px solid transparent;margin-bottom:-2px">
-            Posted
-          </button>
+        <div style="overflow-x:auto">
+          <table id="pjnl-table" style="min-width:960px">
+            <thead><tr>
+              <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
+              <th style="width:100px">Date</th>
+              <th style="width:90px">Supplier Ref</th>
+              <th style="width:150px">Contact</th>
+              <th>Description</th>
+              <th style="width:130px">Account</th>
+              <th style="width:100px">Class</th>
+              <th class="num" style="width:110px">Amount (R)</th>
+              <th class="num" style="width:80px" id="pjnl-vat-header">VAT (R)</th>
+              <th style="width:30px"></th>
+            </tr></thead>
+            <tbody id="pjnl-body"></tbody>
+          </table>
         </div>
-        <!-- Draft controls (locked) -->
-        <div id="pjnl-draft-panel-header" style="padding-top:12px">
-          <p style="font-size:12px;color:var(--ink-light);margin-bottom:8px">Tick rows to post. Each row creates one bill posted to the GL.</p>
-          <div id="purjnl-vat-bar" style="display:none;align-items:center;gap:12px;margin-bottom:8px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:13px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" id="pjnl-vat-incl" style="width:14px;height:14px"> Amounts are VAT inclusive
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" id="pjnl-show-vat" onchange="renderPurJnlTable()" style="width:14px;height:14px"> Show VAT column
-            </label>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:16px;font-size:13px;font-weight:600">
-            <span>Total excl: <span id="pjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
-            <span id="pjnl-total-vat-wrap" style="display:none">VAT: <span id="pjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
-            <span id="pjnl-total-incl-wrap" style="display:none">Total incl: <span id="pjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
-          </div>
-        </div>
-        <!-- Posted filter controls (locked) -->
-        <div id="pjnl-posted-panel-header" style="display:none;padding-top:12px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
-            <span>&#128190;</span>
-            <span>Bills are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
-            <div class="spacer"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0">
-            <div class="form-group" style="flex:1;min-width:160px">
-              <label style="font-size:11px">Search (ref, contact, description, account)</label>
-              <input type="text" id="pjnl-f-text" placeholder="Type to filter..." oninput="_renderPjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
-            </div>
-            <div class="form-group" style="width:120px">
-              <label style="font-size:11px">Date from</label>
-              <input type="date" id="pjnl-f-from" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-            </div>
-            <div class="form-group" style="width:120px">
-              <label style="font-size:11px">Date to</label>
-              <input type="date" id="pjnl-f-to" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
-            </div>
-            <div class="form-group" style="width:100px">
-              <label style="font-size:11px">Amount &gt;=</label>
-              <input type="number" id="pjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-            </div>
-            <div class="form-group" style="width:100px">
-              <label style="font-size:11px">Amount &lt;=</label>
-              <input type="number" id="pjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="_pjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-            <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_pjnlUndoSelected()">&#8617; Undo Selected</button>
-          </div>
+        <div style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600">
+          <span>Total excl: <span id="pjnl-total-excl" style="font-family:var(--mono)">R 0.00</span></span>
+          <span id="pjnl-total-vat-wrap" style="display:none">VAT: <span id="pjnl-total-vat" style="font-family:var(--mono)">R 0.00</span></span>
+          <span id="pjnl-total-incl-wrap" style="display:none">Total incl: <span id="pjnl-total-incl" style="font-family:var(--mono)">R 0.00</span></span>
         </div>
       </div>
-    </div>
-    <!-- SCROLLING BODY -->
-    <div class="view-flex-body">
-      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding-top:8px">
-        <!-- Draft table -->
-        <div id="pjnl-draft-panel">
-          <div style="overflow-x:auto">
-            <table id="pjnl-table" style="min-width:960px">
-              <thead><tr>
-                <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
-                <th style="width:100px">Date</th>
-                <th style="width:90px">Supplier Ref</th>
-                <th style="width:150px">Contact</th>
-                <th>Description</th>
-                <th style="width:130px">Account</th>
-                <th style="width:100px">Class</th>
-                <th class="num" style="width:110px">Amount (R)</th>
-                <th class="num" style="width:80px" id="pjnl-vat-header">VAT (R)</th>
-                <th style="width:30px"></th>
-              </tr></thead>
-              <tbody id="pjnl-body"></tbody>
-            </table>
+      <!-- Posted history panel -->
+      <div id="pjnl-posted-panel" style="display:none">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#dcfce7;border-radius:var(--radius);font-size:12px;color:#166534">
+          <span>&#128190;</span>
+          <span>Bills are posted to the GL. <strong>Remember to Save</strong> the file to persist them.</span>
+          <div class="spacer"></div>
+          <button class="btn btn-primary btn-sm" onclick="saveFileJSON()">Save Now</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px;padding:10px 12px;background:var(--surface);border-radius:var(--radius)">
+          <div class="form-group" style="flex:1;min-width:160px">
+            <label style="font-size:11px">Search (ref, contact, description, account)</label>
+            <input type="text" id="pjnl-f-text" placeholder="Type to filter..." oninput="_renderPjnlPosted()" style="width:100%;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:3px;font-size:12px">
           </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date from</label>
+            <input type="date" id="pjnl-f-from" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:120px">
+            <label style="font-size:11px">Date to</label>
+            <input type="date" id="pjnl-f-to" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &gt;=</label>
+            <input type="number" id="pjnl-f-amin" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <div class="form-group" style="width:100px">
+            <label style="font-size:11px">Amount &lt;=</label>
+            <input type="number" id="pjnl-f-amax" placeholder="0.00" step="0.01" oninput="_renderPjnlPosted()" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="_pjnlClearFilters()" style="height:28px;align-self:flex-end">Clear filters</button>
         </div>
-        <!-- Posted table -->
-        <div id="pjnl-posted-panel" style="display:none">
-          <table style="width:100%">
-            <thead><tr>
-              <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
-              <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
-              <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
-            </tr></thead>
-            <tbody id="pjnl-posted-body"></tbody>
-          </table>
-          <div id="pjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="_pjnlUndoSelected()">&#8617; Undo Selected</button>
         </div>
+        <table style="width:100%">
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
+            <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
+            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
+          </tr></thead>
+          <tbody id="pjnl-posted-body"></tbody>
+        </table>
+        <div id="pjnl-posted-totals" style="display:flex;justify-content:flex-end;gap:16px;margin-top:8px;font-size:13px;font-weight:600"></div>
       </div>
     </div>
   </div>
@@ -2576,7 +2427,7 @@ const TAG = {
 };
 
 function showView(id,btn){
-  document.querySelectorAll('.view,.view-flex').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.sidebar-nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
@@ -2589,7 +2440,7 @@ function showView(id,btn){
   if(id==='cf')  {autoUpdateReportDate();renderCF();}
   if(id==='soce') {autoUpdateReportDate();renderSoCE();}
   if(id==='notes') renderNotes();
-  if(id==='afs'){ populateAFSForm(); renderDirectorsTable(); }
+  if(id==='afs') populateAFSForm();
   if(id==='settings') populateSettingsForm();
   if(id==='tbimport') renderTBImport();
   if(id==='cashbook') renderCashbookView();
@@ -2619,19 +2470,17 @@ function ensureClient(){
 
 function updateClientDetails(manualDateChange){
   ensureClient();
-  state.client.name       = document.getElementById('client-name').value;
-  state.client.reg        = document.getElementById('client-reg').value;
-  state.client.vatNo      = (document.getElementById('client-vatno')?.value||'').trim();
-  state.client.address    = (document.getElementById('client-address')?.value||'').trim();
-  state.client.phone      = (document.getElementById('client-phone')?.value||'').trim();
-  state.client.email      = (document.getElementById('client-email')?.value||'').trim();
-  state.client.entityType = (document.getElementById('client-entity-type')?.value||'company');
+  state.client.name    = document.getElementById('client-name').value;
+  state.client.reg     = document.getElementById('client-reg').value;
+  state.client.vatNo   = (document.getElementById('client-vatno')?.value||'').trim();
+  state.client.address = (document.getElementById('client-address')?.value||'').trim();
+  state.client.phone   = (document.getElementById('client-phone')?.value||'').trim();
+  state.client.email   = (document.getElementById('client-email')?.value||'').trim();
   state.client.priorYearDate = document.getElementById('client-prior-year-date').value;
   if(manualDateChange){
     state.client.reportDate = document.getElementById('client-report-date').value;
     state.client.reportDateManual = true;
   }
-  _markDirty();
   updatePrintHeaders();
 }
 
@@ -2643,7 +2492,6 @@ function renderClientDetails(){
   const adrEl = document.getElementById('client-address');   if(adrEl)  adrEl.value  = state.client.address||'';
   const phEl  = document.getElementById('client-phone');     if(phEl)   phEl.value   = state.client.phone||'';
   const emEl  = document.getElementById('client-email');     if(emEl)   emEl.value   = state.client.email||'';
-  const etEl  = document.getElementById('client-entity-type'); if(etEl) etEl.value  = state.client.entityType||'company';
   document.getElementById('client-report-date').value      = state.client.reportDate||'';
   document.getElementById('client-prior-year-date').value  = state.client.priorYearDate||'';
   updatePrintHeaders();
@@ -2749,7 +2597,7 @@ function renderCOA(){
         onfocus="this.style.borderColor='var(--rule)';this.style.background='var(--white)'"
         onblur="this.style.borderColor='transparent';this.style.background='transparent'">
         ${catOptions(acc.cat)}</select></td>
-      <td><select class="inline-input" onchange="state.accounts[${idx}].cfTag=this.value;_markDirty();renderCF();"
+      <td><select class="inline-input" onchange="state.accounts[${idx}].cfTag=this.value"
         style="width:100%;border:1px solid transparent;background:transparent;font-size:12px;"
         onfocus="this.style.borderColor='var(--rule)';this.style.background='var(--white)'"
         onblur="this.style.borderColor='transparent';this.style.background='transparent'">
@@ -2834,8 +2682,8 @@ function defaultCfTag(cat, name){
 
 function recatCOA(idx,newCat){
   state.accounts[idx].cat=newCat;
+  // Suggest a default CF tag if none set yet
   if(!state.accounts[idx].cfTag) state.accounts[idx].cfTag=defaultCfTag(newCat, state.accounts[idx].name);
-  _markDirty();
   renderCOA();
 }
 
@@ -2957,7 +2805,6 @@ function postEntry(){
       ...(l.payee&&l.payee.trim()?{payee:l.payee.trim()}:{})
     }))};
   state.transactions.push(txn);
-  _markDirty();
   entryLines=[];
   document.getElementById('txn-desc').value='';
   addLine();addLine();
@@ -2966,25 +2813,13 @@ function postEntry(){
 
 // ── Transactions ───────────────────────────────────────────────────────────
 function renderTxns(){
-  const search  = (document.getElementById('txn-search')?.value||'').toLowerCase();
-  const fFrom   = document.getElementById('txn-f-from')?.value||'';
-  const fTo     = document.getElementById('txn-f-to')?.value||'';
-  const fAmin   = parseFloat(document.getElementById('txn-f-amin')?.value)||null;
-  const fAmax   = parseFloat(document.getElementById('txn-f-amax')?.value)||null;
+  const search=(document.getElementById('txn-search')?.value||'').toLowerCase();
   const tbody=document.getElementById('txn-body');
   tbody.innerHTML='';
   let count=0;
   [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(txn=>{
-    if(fFrom && txn.date < fFrom) return;
-    if(fTo   && txn.date > fTo)   return;
     const match=(txn.date+txn.desc+txn.lines.map(l=>l.account).join('')).toLowerCase().includes(search);
     if(!match)return;
-    // Amount filter: check if any line matches
-    if(fAmin!==null||fAmax!==null){
-      const maxAmt = Math.max(...txn.lines.map(l=>Math.max(l.debit||0,l.credit||0)));
-      if(fAmin!==null && maxAmt < fAmin) return;
-      if(fAmax!==null && maxAmt > fAmax) return;
-    }
     txn.lines.forEach((line,li)=>{
       count++;
       const tr=document.createElement('tr');
@@ -3007,7 +2842,6 @@ function renderTxns(){
 function delTxn(id){
   if(!confirm('Delete this journal entry?'))return;
   state.transactions=state.transactions.filter(t=>t.id!==id);
-  _markDirty();
   renderTxns();
 }
 
@@ -3209,34 +3043,8 @@ function _glSourceLabel(src){
   return src;
 }
 
-// ── GL view mode (session-only) ────────────────────────────────────────────
-let _glMode = 'columnar'; // 'columnar' | 'taccount'
-
-function glSetMode(mode){
-  _glMode = mode;
-  const colBtn = document.getElementById('gl-mode-columnar');
-  const taBtn  = document.getElementById('gl-mode-taccount');
-  if(colBtn){ colBtn.style.background = mode==='columnar' ? 'var(--accent)' : 'transparent'; colBtn.style.color = mode==='columnar' ? '#fff' : 'var(--ink-light)'; }
-  if(taBtn) { taBtn.style.background  = mode==='taccount' ? 'var(--accent)' : 'transparent'; taBtn.style.color  = mode==='taccount' ? '#fff' : 'var(--ink-light)'; }
-  renderGL();
-}
-
-function _glPopulateClassDropdown(){
-  const wrap = document.getElementById('gl-class-wrap');
-  const sel  = document.getElementById('gl-class');
-  if(!wrap||!sel) return;
-  const multiClassOn = !!(state.client&&state.client.multiClass);
-  wrap.style.display = multiClassOn ? '' : 'none';
-  if(!multiClassOn) return;
-  const classes = (state.client&&state.client.classes)||[];
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— all classes —</option>'
-    + classes.map(c=>`<option value="${c.id}" ${c.id===cur?'selected':''}>${c.name}</option>`).join('');
-}
-
 function glClearFilters(){
   document.getElementById('gl-search').value='';
-  const clSel = document.getElementById('gl-class'); if(clSel) clSel.value='';
   // Reset dates to default (full CY period)
   _glSetDefaultDates();
   renderGL();
@@ -3277,7 +3085,6 @@ function _glPopulateAccountDropdown(){
 function renderGL(){
   ensureClient();
   _glPopulateAccountDropdown();
-  _glPopulateClassDropdown();
 
   // Set default dates on first call
   const fromEl = document.getElementById('gl-from');
@@ -3288,34 +3095,20 @@ function renderGL(){
   const fromDate  = fromEl.value||'';
   const toDate    = toEl.value||'';
   const search    = (document.getElementById('gl-search').value||'').toLowerCase();
-  const classFilter = (document.getElementById('gl-class')?.value||'');
 
-  // Show/hide correct card based on mode
-  const colCard = document.getElementById('gl-card');
-  const taCard  = document.getElementById('gl-taccount-card');
-  const isTAccount = _glMode === 'taccount';
-  if(colCard) colCard.style.display = isTAccount ? 'none' : '';
-  if(taCard)  taCard.style.display  = isTAccount ? '' : 'none';
-
-  // Resolve class label once — used in both columnar and T-account headings
-  const classLabel = classFilter
-    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl ? cl.name : ''; })()
-    : '';
-
-  // Update heading (columnar only — T-account has its own)
+  // Update heading
   const titleEl  = document.getElementById('gl-account-title');
   const periodEl = document.getElementById('gl-period-label');
-  if(titleEl) titleEl.textContent  = acctName||'Select an account';
-  if(periodEl) periodEl.textContent = [
-    (fromDate||toDate) ? `${fromDate?fmtDate(fromDate):'Start'} — ${toDate?fmtDate(toDate):'End'}` : '',
-    classLabel ? `Class: ${classLabel}` : ''
-  ].filter(Boolean).join('  ·  ');
+  titleEl.textContent  = acctName||'Select an account';
+  periodEl.textContent = (fromDate||toDate)
+    ? `${fromDate?fmtDate(fromDate):'Start'} — ${toDate?fmtDate(toDate):'End'}`
+    : '';
 
   // Update print client line
   const cl = document.getElementById('gl-print-client');
   if(cl){
     const cn = state.client.name||''; const reg = state.client.reg||'';
-    cl.textContent = cn + (reg?' — Reg No: '+reg:'') + (toDate?' | For the period ended '+fmtDate(toDate):'') + (classLabel?' | Class: '+classLabel:'');
+    cl.textContent = cn + (reg?' — Reg No: '+reg:'') + (toDate?' | For the period ended '+fmtDate(toDate):'');
   }
 
   const tbody = document.getElementById('gl-body');
@@ -3323,26 +3116,31 @@ function renderGL(){
   const empty = document.getElementById('gl-empty');
   tbody.innerHTML=''; tfoot.innerHTML='';
 
-  if(!acctName){
-    if(!isTAccount) empty.style.display='';
-    if(taCard) taCard.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px">Select an account to view the T-Account.</div>';
-    return;
-  }
+  if(!acctName){ empty.style.display=''; return; }
   empty.style.display='none';
 
   // ── Find account category ──
   const acct = state.accounts.find(a=>a.name===acctName);
   const cat  = acct ? acct.cat : '';
+  const isBS = BS_CATS.has(cat);
+  // Normal balance: Assets & Expenses = Debit; Liabilities, Equity, Income = Credit
+  const normalDebit = ['Cash and Cash Equivalents','Current Asset','Non-Current Asset',
+                       'Shareholders Loan Asset','Expense','Other Expense','Cost of Sales'].includes(cat);
 
-  // ── Compute opening balance (class filter does NOT apply to opening balance — it is a full account balance) ──
+  // ── Compute opening balance ──
+  // Opening = cumulative effect of ALL transactions for this account BEFORE fromDate
+  // For QBO/Sage imports: PY import is treated as a lump opening if it predates fromDate
   let openDr = 0, openCr = 0;
+
   const cyDate = state.client.reportDate||'';
   (state.transactions||[]).forEach(txn=>{
     const src = txn.source||'';
     const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
     const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
     const isManual   = !isPYImport && !isCYImport;
+    // Respect report date cutoff for manual/cashbook transactions
     if(isManual && cyDate && txn.date > cyDate) return;
+    // Only count if transaction is BEFORE the fromDate window
     const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
     if(fromDate && txnDate >= fromDate) return;
     txn.lines.forEach(l=>{
@@ -3352,43 +3150,10 @@ function renderGL(){
     });
   });
 
+  // Opening balance as signed net (positive = Dr side, negative = Cr side)
   let runBal = openDr - openCr; // positive = debit balance
 
-  // ── Collect and filter transactions in range ──
-  let allLines = [];
-  (state.transactions||[]).forEach(txn=>{
-    const src = txn.source||'';
-    const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
-    const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
-    const isManual   = !isPYImport && !isCYImport;
-    if(isManual && cyDate && txn.date > cyDate) return;
-    const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
-    if(fromDate && txnDate < fromDate) return;
-    if(toDate   && txnDate > toDate)   return;
-    txn.lines.forEach(l=>{
-      if(l.account!==acctName) return;
-      if(search && !txn.desc.toLowerCase().includes(search)) return;
-      // Class filter: skip if class set and line classId doesn't match
-      if(classFilter && (l.classId||'')!==classFilter) return;
-      allLines.push({date:txnDate, desc:txn.desc, src:src, debit:l.debit||0, credit:l.credit||0, classId:l.classId||'', txnId:txn.id});
-    });
-  });
-
-  allLines.sort((a,b)=>a.date.localeCompare(b.date));
-
-  // ── Dispatch to the right renderer ──
-  if(isTAccount){
-    _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, runBal, allLines, taCard, classFilter);
-  } else {
-    _renderGLColumnar(acctName, fromDate, toDate, runBal, allLines, tbody, tfoot, empty);
-  }
-}
-
-function _renderGLColumnar(acctName, fromDate, toDate, openBalNet, allLines, tbody, tfoot, empty){
-  let runBal = openBalNet;
-  const openDr = runBal > 0 ? runBal : 0;
-  const openCr = runBal < 0 ? -runBal : 0;
-
+  // ── Opening balance row ──
   const fmtBal = (bal) => {
     const abs = Math.abs(bal);
     const side = bal >= 0 ? 'Dr' : 'Cr';
@@ -3404,7 +3169,30 @@ function _renderGLColumnar(acctName, fromDate, toDate, openBalNet, allLines, tbo
     <td style="padding:7px 10px;text-align:right">${fmtBal(runBal)}</td>
   </tr>`;
 
-  let periodDr=0, periodCr=0;
+  // ── Collect and filter transactions in range ──
+  let allLines = [];
+  (state.transactions||[]).forEach(txn=>{
+    const src = txn.source||'';
+    const isPYImport = src==='qbo_import_py'||src==='sage_import_py';
+    const isCYImport = src==='qbo_import_cy'||src==='sage_import_cy';
+    const isManual   = !isPYImport && !isCYImport;
+    if(isManual && cyDate && txn.date > cyDate) return;
+    // Use priorYearDate as the effective date for PY imports
+    const txnDate = isPYImport ? (state.client.priorYearDate||txn.date) : txn.date;
+    if(fromDate && txnDate < fromDate) return;
+    if(toDate   && txnDate > toDate)   return;
+    txn.lines.forEach(l=>{
+      if(l.account!==acctName) return;
+      if(search && !txn.desc.toLowerCase().includes(search)) return;
+      allLines.push({date:txnDate, desc:txn.desc, src:src, debit:l.debit||0, credit:l.credit||0, txnId:txn.id});
+    });
+  });
+
+  // Sort by date then by insertion order (stable)
+  allLines.sort((a,b)=>a.date.localeCompare(b.date));
+
+  // ── Render transaction rows ──
+  let periodDr = 0, periodCr = 0;
   allLines.forEach((line,i)=>{
     runBal += line.debit - line.credit;
     periodDr += line.debit;
@@ -3419,8 +3207,10 @@ function _renderGLColumnar(acctName, fromDate, toDate, openBalNet, allLines, tbo
       <td style="padding:6px 10px;text-align:right">${fmtBal(runBal)}</td>
     </tr>`;
   });
+
   tbody.innerHTML = rows;
 
+  // ── Footer: period totals + closing balance ──
   tfoot.innerHTML = `
     <tr style="border-top:2px solid var(--ink);font-weight:700;background:var(--surface)">
       <td style="padding:8px 10px" colspan="3">Period Totals</td>
@@ -3435,107 +3225,6 @@ function _renderGLColumnar(acctName, fromDate, toDate, openBalNet, allLines, tbo
 
   empty.style.display = allLines.length===0 ? '' : 'none';
   if(allLines.length===0) tbody.innerHTML='';
-}
-
-function _renderGLTAccount(acctName, fromDate, toDate, openDr, openCr, openBalNet, allLines, container, classFilter){
-  // Separate into Dr and Cr entry lists
-  const drEntries = [];
-  const crEntries = [];
-
-  // Opening balance goes on its natural side
-  if(Math.abs(openBalNet) >= 0.005){
-    const side = openBalNet > 0 ? 'dr' : 'cr';
-    const amt  = Math.abs(openBalNet);
-    const label = fromDate ? 'Balance b/d' : 'Opening Balance';
-    if(side==='dr') drEntries.push({date:fromDate, desc:label, amt, bold:true});
-    else            crEntries.push({date:fromDate, desc:label, amt, bold:true});
-  }
-
-  // Transaction entries
-  allLines.forEach(l=>{
-    if(l.debit  > 0.005) drEntries.push({date:l.date, desc:l.desc, amt:l.debit,  bold:false});
-    if(l.credit > 0.005) crEntries.push({date:l.date, desc:l.desc, amt:l.credit, bold:false});
-  });
-
-  // Closing balance — brought down on the correct side
-  let closingBal = openBalNet;
-  allLines.forEach(l=>{ closingBal += l.debit - l.credit; });
-
-  // Gross totals for the total row
-  const totalDr = drEntries.reduce((s,e)=>s+(e.bold?0:e.amt),0) + (openBalNet>0 ? openBalNet : 0);
-  const totalCr = crEntries.reduce((s,e)=>s+(e.bold?0:e.amt),0) + (openBalNet<0 ? -openBalNet : 0);
-  const grandTotal = Math.max(totalDr, totalCr);
-
-  // Balance c/d — added to the lighter side to make totals equal
-  if(Math.abs(closingBal) >= 0.005){
-    if(closingBal > 0){
-      // Dr balance: c/d goes on Cr side, b/d goes on Dr side
-      crEntries.push({date:toDate, desc:'Balance c/d', amt:closingBal, bold:true, clos:true});
-    } else {
-      // Cr balance: c/d goes on Dr side, b/d goes on Cr side
-      drEntries.push({date:toDate, desc:'Balance c/d', amt:-closingBal, bold:true, clos:true});
-    }
-  }
-
-  // Gross totals after adding c/d
-  const drTotal = drEntries.filter(e=>!e.clos||!e.bold||e.desc==='Balance c/d'?true:false)
-                            .reduce((s,e)=>s+e.amt,0);
-  const crTotal = crEntries.filter(e=>!e.clos||!e.bold||e.desc==='Balance c/d'?true:false)
-                            .reduce((s,e)=>s+e.amt,0);
-  const lineTotal = Math.max(drTotal, crTotal);
-
-  // Render one side as an inner table: date | description | amount
-  function renderSide(entries){
-    if(!entries.length) return `<div class="t-empty">—</div>`;
-    const rows = entries.map(e=>`<tr>
-      <td class="col-date">${e.date?fmtDate(e.date):''}</td>
-      <td class="col-desc${e.bold?' is-system':''}">${e.bold?`<em>${e.desc}</em>`:e.desc}</td>
-      <td class="col-amt">${fmtAmt2(e.amt)}</td>
-    </tr>`).join('');
-    return `<table class="t-entry-table"><tbody>${rows}</tbody></table>`;
-  }
-
-  const classLabel = classFilter
-    ? (() => { const cl=(state.client&&state.client.classes||[]).find(c=>c.id===classFilter); return cl ? cl.name : ''; })()
-    : '';
-  const periodLabel = (fromDate||toDate)
-    ? `${fromDate?fmtDate(fromDate):'Start'} to ${toDate?fmtDate(toDate):'End'}`
-    : '';
-
-  container.innerHTML = `
-    <div class="t-account-wrap">
-      <table class="t-account">
-        <colgroup><col style="width:50%"><col style="width:50%"></colgroup>
-        <tbody>
-          <tr>
-            <td class="t-title" colspan="2">
-              ${acctName}
-              ${classLabel?`<div style="font-size:10px;font-weight:600;opacity:.9;margin-top:3px;letter-spacing:.06em;text-transform:uppercase">Class: ${classLabel}</div>`:''}
-              ${periodLabel?`<div style="font-size:10px;font-weight:400;opacity:.8;margin-top:2px">${periodLabel}</div>`:''}
-            </td>
-          </tr>
-          <tr>
-            <td class="t-col-head t-dr">Dr</td>
-            <td class="t-col-head t-cr">Cr</td>
-          </tr>
-          <tr>
-            <td class="t-dr-cell">${renderSide(drEntries)}</td>
-            <td class="t-cr-cell">${renderSide(crEntries)}</td>
-          </tr>
-          <tr class="t-total-row">
-            <td class="t-dr-cell">${fmtAmt2(drTotal)}</td>
-            <td class="t-cr-cell">${fmtAmt2(crTotal)}</td>
-          </tr>
-          ${Math.abs(closingBal)>=0.005?`
-          <tr class="t-bal-row">
-            <td colspan="2" style="text-align:center;padding:5px 10px;background:var(--surface);font-size:11px;color:var(--ink-light);border-top:1px solid var(--rule)">
-              Balance c/d: <strong style="font-family:var(--mono)">${fmtAmt2(Math.abs(closingBal))}</strong>
-              <span style="margin-left:6px">${closingBal>0?'Debit balance':'Credit balance'}</span>
-            </td>
-          </tr>`:''}
-        </tbody>
-      </table>
-    </div>`;
 }
 
 // ── Note reference helper ──────────────────────────────────────────────────
@@ -3894,24 +3583,6 @@ function renderPL(){
   table.innerHTML=html;
   document.getElementById('pl-print-date').textContent='';
   updatePrintHeaders();
-  // If a class is active, append its name to the P&L print header
-  const banner = document.getElementById('pl-class-banner');
-  const classLine = document.getElementById('pl-class-line');
-  if(_plActiveClass){
-    const activeClass = (state.client&&state.client.classes||[]).find(c=>c.id===_plActiveClass);
-    if(activeClass){
-      // Print: bold class name on its own line between title and client subheading
-      if(classLine){ classLine.textContent = activeClass.name; classLine.style.display=''; }
-      // Client subheading: keep clean — no class tag appended
-      const plLineScreen = document.getElementById('pl-client-line-screen');
-      if(plLineScreen) plLineScreen.textContent += ' | '+activeClass.name;
-      // Screen banner
-      if(banner){ banner.textContent = '📍 '+activeClass.name; banner.style.display=''; }
-    }
-  } else {
-    if(classLine){ classLine.textContent=''; classLine.style.display='none'; }
-    if(banner) banner.style.display='none';
-  }
 }
 
 // ── Statement of Changes in Equity ────────────────────────────────────────
@@ -3933,26 +3604,30 @@ function renderSoCE(){
   const cyYear  = state.client.reportDate      ? fmtReportDate(state.client.reportDate)      : 'Current Year';
   const pyYear  = state.client.priorYearDate   ? fmtReportDate(state.client.priorYearDate)   : 'Prior Year';
 
-  // Determine prior-year opening date label (day after one year before the closing date)
-  // Parse manually to avoid UTC/local timezone issues with new Date(string)
+  // Determine prior-year opening date label (one year before PY closing)
+  // We just show "1 March YYYY" style if possible, otherwise "Opening"
   function openingLabel(closingDateStr){
     if(!closingDateStr) return 'Opening balance';
-    const [yr, mo, dy] = closingDateStr.split('-').map(Number);
-    // Opening = (closing year - 1) + 1 day
-    // e.g. 28/02/2025 → 29/02/2024 → but 2024 is leap year so valid → 1/03/2024
-    // Build as a local date to avoid UTC shift
-    const d = new Date(yr - 1, mo - 1, dy + 1); // month is 0-based
-    const months = ['January','February','March','April','May','June',
-                    'July','August','September','October','November','December'];
-    return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+    const d = new Date(closingDateStr);
+    d.setFullYear(d.getFullYear()-1);
+    d.setDate(d.getDate()+1);
+    return '1 '+d.toLocaleString('en-ZA',{month:'long'})+' '+d.getFullYear();
   }
   const pyOpenLabel = hasPY ? openingLabel(state.client.priorYearDate) : 'Opening balance';
   const cyOpenLabel = hasPY ? openingLabel(state.client.reportDate)    : 'Opening balance';
 
-  const soceET = (state&&state.client&&state.client.entityType)||'company';
-  const soceT  = _entityTerms();
+  // Equity component balances
+  const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
+  let cyShareCap=0, cyRetained=0, pyShareCap=0, pyRetained=0;
+  eqAccts.forEach(a=>{
+    const cyNet = cy[a.name].cr - cy[a.name].dr;
+    const pyNet = py[a.name].cr - py[a.name].dr;
+    const isShareCap = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member');
+    if(isShareCap){ cyShareCap+=cyNet; pyShareCap+=pyNet; }
+    else          { cyRetained+=cyNet; pyRetained+=pyNet; }
+  });
 
-  // P&L profits (used by all entity types)
+  // P&L profits
   let cyInc=0,cyExp=0,pyInc=0,pyExp=0;
   state.accounts.filter(a=>a.cat==='Income'||a.cat==='Other Income').forEach(a=>{
     cyInc+=cy[a.name].cr-cy[a.name].dr; pyInc+=py[a.name].cr-py[a.name].dr;
@@ -3963,170 +3638,71 @@ function renderSoCE(){
   const cyProfit = cyInc-cyExp;
   const pyProfit = pyInc-pyExp;
 
-  if(soceET==='partnership'){
-    // ── Partnership SoCE: one column per partner, read directly from their capital accounts ──
-    // Partners come from state.afs.directors. Their capital account is identified by matching
-    // the partner's full name inside an Equity category account name.
-    const partners = (state.afs&&state.afs.directors||[]).filter(d=>d.name);
+  // For QBO/Sage imports, the Retained Earnings account balance represents the
+  // opening balance for that year (before the year's profit is closed in).
+  // Profit must always be added to get the true closing retained earnings.
+  const pyClosRet = pyRetained + pyProfit;
+  const cyOpenRet = pyClosRet;
+  const cyClosRet = cyRetained + cyProfit;
 
-    // Find the capital account for each partner: first Equity account whose name contains
-    // the partner's name (case-insensitive). Falls back to null if not found.
-    function findCapitalAcct(partnerName){
-      const lc = partnerName.toLowerCase();
-      return state.accounts.find(a=>a.cat==='Equity' && a.name.toLowerCase().includes(lc)) || null;
-    }
+  // PY opening retained = pyClosRet - pyProfit
+  const pyOpenRet = pyClosRet - pyProfit;
 
-    // Parse pct string "50%" → 0.5. Default to equal split if missing/unparseable.
-    function parsePct(pctStr){
-      const n = parseFloat((pctStr||'').replace('%',''));
-      return isNaN(n) ? (1/Math.max(partners.length,1)) : n/100;
-    }
+  // Share capital — assumed unchanged; opening = closing for both years
+  const pyOpenSC = pyShareCap, pyClosSC = pyShareCap;
+  const cyOpenSC = pyShareCap, cyClosSC = cyShareCap;
 
-    const cols = 1 + partners.length + 1; // label + partner cols + total
+  const showSC = Math.abs(cyShareCap)>=0.005||Math.abs(pyShareCap)>=0.005;
+  const cols   = showSC ? 4 : 3; // description + [share cap] + retained + total
 
-    // Helpers
-    function nc(v,bold){ const s=bold?' style="font-weight:700"':''; return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`; }
-    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;white-space:normal;word-break:break-word;line-height:1.4">${txt}</th>`; }
-    function labelTh(){ return `<th style="font-size:11px;font-weight:600;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:120px"></th>`; }
-    function sectionLbl(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
-    function spacer(){ return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`; }
-    function row(label, vals, bold, indent){
-      const tot = vals.reduce((s,v)=>s+v,0);
-      const b = bold?' style="font-weight:700"':'';
-      const pad = bold ? '10' : (indent ? '24' : '10');
-      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${pad}px">${bold?`<strong>${label}</strong>`:label}</td>`
-        + vals.map(v=>nc(v,bold)).join('')
-        + nc(tot,bold)
-        + `</tr>`;
-    }
-
-    // Column headers: partner names
-    html += `<tr>${labelTh()}${partners.map(p=>th(p.name+'<br><span style="font-weight:400">R</span>')).join('')}${th('Total<br><span style="font-weight:400">R</span>')}</tr>`;
-
-    // Compute per-partner figures from their capital accounts
-    // getBalancesSplit() returns cy/py as cumulative account totals
-    // For each capital account:
-    //   CY closing balance = cy[acct].cr - cy[acct].dr
-    //   PY closing balance = py[acct].cr - py[acct].dr
-    //   Capital introduced (CY) = sum of credit lines in CY transactions only
-    //   Drawings (CY) = sum of debit lines in CY transactions only
-    //   Opening balance = PY closing
-
-    // Build per-partner data using NET movement (closing − opening − profitShare).
-    // This avoids distortion from rebalancing journals that move funds between capital accounts.
-    // The closing balance is authoritative (straight from ledger); movements are derived.
-    const pdata = partners.map(p=>{
-      const acct = findCapitalAcct(p.name);
-      const acctName = acct ? acct.name : null;
-      const pct  = parsePct(p.pct);
-      const cyBal = acctName && cy[acctName] ? (cy[acctName].cr - cy[acctName].dr) : 0;
-      const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
-      const openBal = pyBal;
-      const profitShare = Math.round(cyProfit * pct * 100) / 100;
-      // Net capital movement = all movements other than profit allocation
-      const netCapMov = Math.round((cyBal - openBal - profitShare) * 100) / 100;
-      const closBal = cyBal;
-      return {name:p.name, openBal, netCapMov, profitShare, closBal};
-    });
-
-    // PY block data
-    const pyPdata = hasPY ? partners.map(p=>{
-      const acct = findCapitalAcct(p.name);
-      const acctName = acct ? acct.name : null;
-      const pct  = parsePct(p.pct);
-      const pyBal = acctName && py[acctName] ? (py[acctName].cr - py[acctName].dr) : 0;
-      const pyProfitShare = Math.round(pyProfit * pct * 100) / 100;
-      const pyOpenBal = Math.round((pyBal - pyProfitShare) * 100) / 100;
-      const pyNetCapMov = 0; // no two-years-ago data available
-      return {name:p.name, openBal:pyOpenBal, netCapMov:pyNetCapMov, profitShare:pyProfitShare, closBal:pyBal};
-    }) : [];
-
-    function renderBlock(yearLabel, openLabel, closeLabel, data){
-      html += sectionLbl(yearLabel);
-      html += row('Balance at '+openLabel,           data.map(d=>d.openBal),    true,  false);
-      if(data.some(d=>Math.abs(d.netCapMov)>0.5)){
-        html += row('Capital movements during year', data.map(d=>d.netCapMov), false, true);
-      }
-      html += row('Share of profit / (loss)',        data.map(d=>d.profitShare),false, true);
-      html += row('Balance at '+closeLabel,          data.map(d=>d.closBal),    true,  false);
-    }
-
-    if(hasPY){
-      renderBlock('Year ended '+pyYear, pyOpenLabel, pyYear, pyPdata);
-      html += spacer();
-    }
-    renderBlock('Year ended '+cyYear, cyOpenLabel, cyYear, pdata);
-
-    // Fallback message if no partners configured
-    if(partners.length===0){
-      html += `<tr><td colspan="${cols}" style="padding:16px;text-align:center;color:var(--ink-light);font-size:13px">
-        Add partners in AFS Settings → Partners to populate this statement.</td></tr>`;
-    }
-
-  } else {
-    // ── Company / Sole Prop: original 2-column layout ──
-    const eqAccts = state.accounts.filter(a=>a.cat==='Equity');
-    let cyShareCap=0, cyRetained=0, pyShareCap=0, pyRetained=0;
-    eqAccts.forEach(a=>{
-      const cyNet = cy[a.name].cr - cy[a.name].dr;
-      const pyNet = py[a.name].cr - py[a.name].dr;
-      const isShareCap = a.name.toLowerCase().includes('share')||a.name.toLowerCase().includes('member');
-      if(isShareCap){ cyShareCap+=cyNet; pyShareCap+=pyNet; }
-      else          { cyRetained+=cyNet; pyRetained+=pyNet; }
-    });
-
-    const pyClosRet = pyRetained + pyProfit;
-    const cyOpenRet = pyClosRet;
-    const cyClosRet = cyRetained + cyProfit;
-    const pyOpenRet = pyClosRet - pyProfit;
-    const pyOpenSC = pyShareCap, pyClosSC = pyShareCap;
-    const cyOpenSC = pyShareCap, cyClosSC = cyShareCap;
-
-    const showSC = Math.abs(cyShareCap)>=0.005||Math.abs(pyShareCap)>=0.005;
-    const cols   = showSC ? 4 : 3;
-
-    function nc(v,bold){ const s=bold?' style="font-weight:700"':''; return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`; }
-    function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
-    function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
-    function sectionLabel(txt){ return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`; }
-    function balanceRow(label, sc, ret, bold){
-      const tot = sc+ret;
-      const b = bold ? ' style="font-weight:700"' : '';
-      return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
-        +(showSC ? nc(sc,bold) : '')
-        +nc(ret,bold)
-        +nc(tot,bold)
-        +`</tr>`;
-    }
-    function profitRow(sc, ret){
-      const tot = sc+ret;
-      return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
-        +(showSC ? nc(sc) : '')
-        +nc(ret)
-        +nc(tot)
-        +`</tr>`;
-    }
-    function spacer(){ return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`; }
-
-    // Column header labels depend on entity type
-    const scLabel = soceET==='soleprop' ? "Owner's<br>Capital<br><span style='font-weight:400'>R</span>"
-      : "Share Capital<br><span style='font-weight:400'>R</span>";
-    const retLabel = soceET==='soleprop' ? "Retained<br>Earnings<br><span style='font-weight:400'>R</span>"
-      : "Retained<br>Earnings<br><span style='font-weight:400'>R</span>";
-    html += `<tr>${labelTh()}${showSC?th(scLabel):''}${th(retLabel)}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
-
-    if(hasPY){
-      html += sectionLabel('Year ended '+pyYear);
-      html += balanceRow('Balance at '+pyOpenLabel, pyOpenSC, pyOpenRet, true);
-      html += profitRow(0, pyProfit);
-      html += balanceRow('Balance at '+pyYear, pyClosSC, pyClosRet, true);
-      html += spacer();
-    }
-    html += sectionLabel('Year ended '+cyYear);
-    html += balanceRow('Balance at '+cyOpenLabel, cyOpenSC, cyOpenRet, true);
-    html += profitRow(0, cyProfit);
-    html += balanceRow('Balance at '+cyYear, cyClosSC, cyClosRet, true);
+  // Helpers
+  function nc(v,bold){
+    const s = bold ? ' style="font-weight:700"' : '';
+    return `<td class="num"${s}>${fmtPL(Math.round(v))}</td>`;
   }
+  function th(txt){ return `<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px">${txt}</th>`; }
+  function labelTh(){ return `<th style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px"></th>`; }
+  function sectionLabel(txt){
+    return `<tr><td colspan="${cols}" style="font-size:11px;color:var(--ink-light);padding:10px 10px 2px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${txt}</td></tr>`;
+  }
+  function balanceRow(label, sc, ret, bold){
+    const tot = sc+ret;
+    const b = bold ? ' style="font-weight:700"' : '';
+    return `<tr class="${bold?'fs-total':'fs-row'}"><td${b} style="padding-left:${bold?'10':'24'}px">${bold?`<strong>${label}</strong>`:label}</td>`
+      +(showSC ? nc(sc,bold) : '')
+      +nc(ret,bold)
+      +nc(tot,bold)
+      +`</tr>`;
+  }
+  function profitRow(sc, ret){
+    const tot = sc+ret;
+    return `<tr class="fs-row"><td style="padding-left:24px">Profit / (Loss) for the year</td>`
+      +(showSC ? nc(sc) : '')
+      +nc(ret)
+      +nc(tot)
+      +`</tr>`;
+  }
+  function spacer(){
+    return `<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`;
+  }
+
+  // Column headers
+  html += `<tr>${labelTh()}${showSC?th('Share Capital<br><span style="font-weight:400">R</span>'):''}${th('Retained<br>Earnings<br><span style="font-weight:400">R</span>')}${th('Total<br>Equity<br><span style="font-weight:400">R</span>')}</tr>`;
+
+  // ── PY block ──
+  if(hasPY){
+    html += sectionLabel('Year ended '+pyYear);
+    html += balanceRow('Balance at '+pyOpenLabel, pyOpenSC, pyOpenRet, true);
+    html += profitRow(0, pyProfit);
+    html += balanceRow('Balance at '+pyYear, pyClosSC, pyClosRet, true);
+    html += spacer();
+  }
+
+  // ── CY block ──
+  html += sectionLabel('Year ended '+cyYear);
+  html += balanceRow('Balance at '+cyOpenLabel, cyOpenSC, cyOpenRet, true);
+  html += profitRow(0, cyProfit);
+  html += balanceRow('Balance at '+cyYear, cyClosSC, cyClosRet, true);
 
   table.innerHTML = html;
   const pd = document.getElementById('soce-print-date');
@@ -4685,11 +4261,10 @@ function renderBS(){
 
   // Equity
   let cyEqTot=0, pyEqTot=0, eqRows='';
-  const _bsET = (state.client&&state.client.entityType)||'company';
   state.accounts.filter(a=>a.cat==='Equity').forEach(a=>{
     const cyNet=cy[a.name].cr-cy[a.name].dr;
     const pyNet=py[a.name].cr-py[a.name].dr;
-    if(Math.abs(cyNet)<0.005&&Math.abs(pyNet)<0.005) return; // skip genuinely empty accounts
+    if(Math.abs(cyNet)<0.005&&Math.abs(pyNet)<0.005) return;
     cyEqTot+=cyNet; pyEqTot+=pyNet;
     eqRows+=`<tr class="fs-row"><td class="indent">${a.name}</td>${getNoteRef(a.name)}<td class="num">${fmtPL(Math.round(cyNet))}</td>${hasPY?`<td class="num">${fmtPL(Math.round(pyNet))}</td>`:''}` + `</tr>`;
   });
@@ -4704,23 +4279,19 @@ function renderBS(){
   });
   const cyPeriodProfit=cyIncPeriod-cyExpPeriod;
   const pyProfit=pyInc-pyExp;
-  // For QBO/Sage files, Retained Earnings already contains closed prior-year P&L — don't add it again.
-  // For manual-journal clients, PY P&L sits in income/expense accounts and must be rolled into
-  // CY equity so the Balance Sheet balances correctly.
+  // For QBO files, Retained Earnings already contains closed prior-year P&L — don't add it again.
+  // For manual journals, PY P&L sits in income/expense accounts and must be rolled into
+  // CY retained equity so the CY Balance Sheet balances correctly.
   const hasQBOImport = state.transactions.some(t=>t.source==='qbo_import_cy'||t.source==='qbo_import_py'||t.source==='sage_import_cy'||t.source==='sage_import_py');
   const pyProfitRollToCY = (!hasQBOImport && hasPY) ? pyProfit : 0;
   if(cyPeriodProfit!==0||pyProfit!==0){
     if(Math.abs(pyProfitRollToCY)>=0.005){
       const label = pyProfitRollToCY>=0 ? 'Prior Year Accumulated Profit' : 'Prior Year Accumulated Loss';
-      // CY column: PY profit rolled forward. PY column: dash (not yet accumulated at PY date)
       eqRows+=`<tr class="fs-row"><td class="indent">${label}</td><td class="note-ref"></td><td class="num">${fmtPL(Math.round(pyProfitRollToCY))}</td>${hasPY?'<td class="num">-</td>':''}` + `</tr>`;
       cyEqTot+=pyProfitRollToCY;
-      // pyEqTot does NOT get pyProfit here — it's shown separately below as Current Year Profit
     }
-    // Current Year Profit / (Loss) — CY column is current period; PY column is PY period
     eqRows+=`<tr class="fs-row"><td class="indent">Current Year Profit / (Loss)</td><td class="note-ref"></td><td class="num">${fmtPL(Math.round(cyPeriodProfit))}</td>${hasPY?`<td class="num">${fmtPL(Math.round(pyProfit))}</td>`:''}` + `</tr>`;
-    cyEqTot+=cyPeriodProfit;
-    pyEqTot+=pyProfit; // PY column must include PY profit to balance the PY BS
+    cyEqTot+=cyPeriodProfit; pyEqTot+=pyProfit;
   }
   const cyEqTotR = cyEqTot, pyEqTotR = pyEqTot;
   const eqSection = (cyEqTotR===0&&pyEqTotR===0) ? {html:'',cyTotal:0,pyTotal:0} : {
@@ -4834,9 +4405,6 @@ function renderCF(){
   if(tagged['op-wc'].length>0){
     let hasRow=false,rows='';
     tagged['op-wc'].forEach(a=>{
-      // Skip P&L accounts - their effect is already in cyNetProfit
-      const isPL = a.cat==='Income'||a.cat==='Other Income'||a.cat==='Cost of Sales'||a.cat==='Expense'||a.cat==='Other Expense';
-      if(isPL) return;
       const cmv=cyMov(a.name), pmv=pyMov(a.name);
       const isAsset=(a.cat==='Cash and Cash Equivalents'||a.cat==='Current Asset'||a.cat==='Non-Current Asset');
       const cyAdj=isAsset ? -(cmv.dr-cmv.cr) : cmv.cr-cmv.dr;
@@ -5015,6 +4583,13 @@ function ppeAcctOptions(selected){
       .sort((a,b)=>a.name.localeCompare(b.name))
       .map(a=>`<option value="${a.name}" ${a.name===selected?'selected':''}>${a.name} (${a.cat})</option>`).join('');
 }
+function ppeExpAcctOptions(selected){
+  return '<option value="">— none —</option>'+
+    [...state.accounts]
+      .filter(a=>a.cat==='Other Expense')
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .map(a=>`<option value="${a.name}" ${a.name===selected?'selected':''}>${a.name}</option>`).join('');
+}
 
 function renderPPENote(note, i, container){
   const {py, cy} = getBalancesSplit();
@@ -5080,15 +4655,14 @@ function renderPPENote(note, i, container){
     </tr>
   </tfoot></table>`;
 
-  // ── Table 2: Movement reconciliation ──
-  // Always shown. When no prior year date, opening CV = 0 (first year of operations).
-  {
+  // ── Table 2: Movement reconciliation (only when PY data exists) ──
+  if(hasPY){
     const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
-    const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Opening Balance';
+    const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
 
     // Per-row movement figures:
-    // Opening CV  = PY cost − PY dep  (zero when no prior year)
-    // Additions   = CY cost − PY cost  (increase in cost account during the year)
+    // Opening CV  = PY cost − PY dep
+    // Additions   = CY cost − PY cost  (increase in cost account)
     // Dep charge  = CY dep − PY dep    (increase in accumulated dep)
     // Disposals   = manual input stored on row (r.disposals)
     // Closing CV  = Opening + Additions − Disposals − Dep charge
@@ -5114,7 +4688,8 @@ function renderPPENote(note, i, container){
       const autoAdds = Math.round(costCY(r) - costPY(r));
       const hasManualAdds = r.additions !== undefined && r.additions !== '';
       const adds     = hasManualAdds ? parseFloat(r.additions)||0 : autoAdds;
-      const depChg   = Math.round(depCY(r)  - depPY(r));
+      const expBal   = r.expAcct && cy[r.expAcct] ? Math.abs(cy[r.expAcct].dr - cy[r.expAcct].cr) : 0;
+      const depChg   = Math.round(expBal);
       const disp     = parseFloat((note.rows[ri].disposals)||0);
       const closeCV  = Math.round(openCV + adds - disp - depChg);
 
@@ -5132,7 +4707,8 @@ function renderPPENote(note, i, container){
           <div class="no-print" style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
             <input type="number" step="0.01" min="0" class="ppe-disp-input"
               value="${hasManualAdds ? adds : (autoAdds||'')}" placeholder="0.00"
-              oninput="state.notes[${i}].rows[${ri}].additions=this.value;clearTimeout(this._t);this._t=setTimeout(()=>renderNotes(),400)"
+              oninput="state.notes[${i}].rows[${ri}].additions=this.value"
+              onblur="renderNotes()"
               style="width:90px;height:26px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:var(--mono);text-align:right">
             ${addsIndicator}
           </div>
@@ -5141,7 +4717,8 @@ function renderPPENote(note, i, container){
         <td class="num">
           <input type="number" step="0.01" min="0" class="ppe-disp-input no-print"
             value="${disp||''}" placeholder="0.00"
-            oninput="state.notes[${i}].rows[${ri}].disposals=this.value;clearTimeout(this._t);this._t=setTimeout(()=>renderNotes(),400)"
+            oninput="state.notes[${i}].rows[${ri}].disposals=this.value"
+            onblur="renderNotes()"
             style="width:90px;height:26px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:var(--mono);text-align:right">
           <span class="print-only" style="display:none">${disp?fmtAmt(disp):'-'}</span>
         </td>
@@ -5180,6 +4757,9 @@ function renderPPENote(note, i, container){
       <span style="font-size:11px;color:var(--ink-light);white-space:nowrap">Acc Dep:</span>
       <select style="flex:1;min-width:0;height:30px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit"
         onchange="state.notes[${i}].rows[${ri}].depAcct=this.value;renderNotes()">${ppeAcctOptions(r.depAcct)}</select>
+      <span style="font-size:11px;color:var(--ink-light);white-space:nowrap">Dep Expense:</span>
+      <select style="flex:1;min-width:0;height:30px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit"
+        onchange="state.notes[${i}].rows[${ri}].expAcct=this.value;renderNotes()">${ppeExpAcctOptions(r.expAcct)}</select>
       <button class="ppe-del-row-btn" onclick="state.notes[${i}].rows.splice(${ri},1);renderNotes()" title="Remove row">×</button>
     </div>`;
   });
@@ -5477,7 +5057,7 @@ function _shlRowNarrative(r){
 
   if(!r.hasFormalAgreement){
     // Default — no formal agreement, simplest safe disclosure
-    return _adaptText(`The loan ${direction} ${name} is unsecured, bears no interest and has no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loan is classified as a non-current ${isAsset?'asset':'liability'}.`);
+    return `The loan ${direction} ${name} is unsecured, bears no interest and has no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loan is classified as a non-current ${isAsset?'asset':'liability'}.`;
   }
 
   // Formal agreement — build from components
@@ -5507,7 +5087,7 @@ function _shlGenerateNarrative(rows){
     const classification = hasLiab ? 'non-current liabilities' : 'non-current assets';
 
     if(!r0.hasFormalAgreement){
-      return _adaptText(`The loans are unsecured, bear no interest and have no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loans are classified as ${classification}.`);
+      return `The loans are unsecured, bear no interest and have no fixed repayment terms. The directors do not expect repayment within the next twelve months and accordingly the loans are classified as ${classification}.`;
     }
     const security = r0.isSecured ? 'secured' : 'unsecured';
     const interest = r0.hasInterest && r0.interestRate
@@ -6150,125 +5730,17 @@ function renderTaxNote(note, i, container){
 const _BOP_COMPILATION = 'These statements are unaudited and unreviewed.';
 const _BOP_REVIEW      = 'These statements are reviewed but not audited.';
 
-// ── Entity type terminology ────────────────────────────────────────────────
-function _entityTerms(){
-  const et = (state&&state.client&&state.client.entityType)||'company';
-  if(et==='partnership') return {
-    roleP:        'partners',
-    roleS:        'partner',
-    rolePCap:     'Partners',
-    roleSCap:     'Partner',
-    reportTitle:  "Partners' Report",
-    respTitle:    "Partners' Responsibilities and Approval",
-    equityLabel:  "Partners' Capital",
-    capitalSection:'Partners\' Capital',
-    toThe:        'Partners',
-    entityNoun:   'partnership',
-    entityNounCap:'Partnership',
-  };
-  if(et==='soleprop') return {
-    roleP:        'proprietor',
-    roleS:        'proprietor',
-    rolePCap:     'Proprietor',
-    roleSCap:     'Proprietor',
-    reportTitle:  "Proprietor's Report",
-    respTitle:    "Proprietor's Responsibilities and Approval",
-    equityLabel:  "Owner's Capital",
-    capitalSection:"Owner's Capital",
-    toThe:        'Proprietor',
-    entityNoun:   'sole proprietorship',
-    entityNounCap:'Sole Proprietorship',
-  };
-  // default: company
-  return {
-    roleP:        'directors',
-    roleS:        'director',
-    rolePCap:     'Directors',
-    roleSCap:     'Director',
-    reportTitle:  "Directors' Report",
-    respTitle:    "Directors' Responsibilities and Approval",
-    equityLabel:  "Share Capital / Members Interest",
-    capitalSection:'Share Capital',
-    toThe:        'Directors',
-    entityNoun:   'company',
-    entityNounCap:'Company',
-  };
-}
-
-// Adapt stored boilerplate (always written in company/directors form) to the
-// current entity type at render time. Never modifies stored state.
-function _adaptText(txt){
-  if(!txt) return txt;
-  const et = (state&&state.client&&state.client.entityType)||'company';
-  if(et==='company') return txt; // no change needed
-  const t = _entityTerms();
-  return txt
-    // Specific multi-word phrases first (longest match wins)
-    .replace(/\bboard of directors\b/gi,                    t.roleS)
-    .replace(/\bDirectors' Responsibilities and Approval\b/g, t.respTitle)
-    .replace(/\bDirectors' Responsibilities\b/g,            t.rolePCap+"' Responsibilities")
-    .replace(/\bDirectors' Report\b/g,                      t.reportTitle)
-    .replace(/\bDirector's Report\b/g,                      t.reportTitle)
-    .replace(/\bthe directors of the company\b/gi,          'the '+t.roleP+' of the '+t.entityNoun)
-    .replace(/\bThe directors have reviewed\b/g,            'The '+t.rolePCap+' have reviewed')
-    .replace(/\bthe directors have a reasonable\b/g,        'the '+t.roleP+' have a reasonable')
-    .replace(/\bthe directors have no reason\b/g,           'the '+t.roleP+' have no reason')
-    .replace(/\bThe directors are also responsible\b/g,     'The '+t.rolePCap+' are also responsible')
-    .replace(/\bThe directors are responsible\b/g,          'The '+t.rolePCap+' are responsible')
-    .replace(/\bThe directors are not aware\b/g,            'The '+t.rolePCap+' are not aware')
-    .replace(/\bthe directors are\b/gi,                     'the '+t.roleP+' are')
-    .replace(/\bthe directors\b/gi,                         'the '+t.roleP)
-    .replace(/\bThe directors\b/g,                          'The '+t.rolePCap)
-    // Singular director
-    .replace(/\bThe director has reviewed\b/g,              'The '+t.roleSCap+' has reviewed')
-    .replace(/\bthe director has a reasonable\b/g,          'the '+t.roleS+' has a reasonable')
-    .replace(/\bthe director has no reason\b/g,             'the '+t.roleS+' has no reason')
-    .replace(/\bThe director is also responsible\b/g,       'The '+t.roleSCap+' is also responsible')
-    .replace(/\bThe director is responsible\b/g,            'The '+t.roleSCap+' is responsible')
-    .replace(/\bThe director is not aware\b/g,              'The '+t.roleSCap+' is not aware')
-    .replace(/\bthe director is\b/gi,                       'the '+t.roleS+' is')
-    .replace(/\bthe director\b/gi,                          'the '+t.roleS)
-    .replace(/\bThe director\b/g,                           'The '+t.roleSCap)
-    // Remaining bare words
-    .replace(/\bDirectors\b/g,                              t.rolePCap)
-    .replace(/\bdirectors\b/g,                              t.roleP)
-    .replace(/\bDirector\b/g,                               t.roleSCap)
-    .replace(/\bdirector\b/g,                               t.roleS)
-    // Company → entity noun
-    .replace(/\bthe company's\b/gi,                         'the '+t.entityNoun+"'s")
-    .replace(/\bthe company\b/gi,                           'the '+t.entityNoun)
-    // Share Capital / dividends section labels
-    .replace(/\bShare Capital\b/g,                          t.capitalSection)
-    .replace(/\bdividends\b/gi, et==='partnership'||et==='soleprop' ? 'distributions' : 'dividends');
-}
-
 function afsDefaults(clientName, periodEnd){
   const cn = clientName || '{clientName}';
   const pe = periodEnd   || '{periodEnd}';
   const isReview = (state&&state.afs&&state.afs.engagementType)==='review';
   const bopStmt  = isReview ? _BOP_REVIEW : _BOP_COMPILATION;
-  const et = (state&&state.client&&state.client.entityType)||'company';
-  const natureDefault = et==='partnership'
-    ? cn+' is a partnership registered and operating in the Republic of South Africa. The principal business of the partnership is [describe nature of business]. There has been no change in the nature of the business during the year under review.'
-    : et==='soleprop'
-    ? cn+' is a sole proprietorship operating in the Republic of South Africa. The principal business of the proprietorship is [describe nature of business]. There has been no change in the nature of the business during the year under review.'
-    : cn+' is a private company incorporated and domiciled in the Republic of South Africa. The principal business of the company is [describe nature of business]. There has been no change in the nature of the business of the company during the year under review.';
-  const sharecapDefault = et==='partnership'
-    ? 'The partnership capital comprises the individual capital contributions of the partners as reflected in the Statement of Changes in Equity.'
-    : et==='soleprop'
-    ? "The owner's capital comprises the proprietor's contributions and accumulated retained profits as reflected in the Statement of Changes in Equity."
-    : 'The company is authorised to issue ordinary shares with no par value. At the financial year end, [X] ordinary shares had been issued and are fully paid up.';
-  const dividendsDefault = et==='partnership'
-    ? 'No distributions were made to partners during the year under review.'
-    : et==='soleprop'
-    ? 'No drawings were taken by the proprietor during the year under review (other than as reflected in the equity accounts).'
-    : 'No dividends were declared or paid during the year under review.';
   return {
-    nature: natureDefault,
-    sharecap: sharecapDefault,
+    nature: cn + " is a private company incorporated and domiciled in the Republic of South Africa. The principal business of the company is [describe nature of business]. There has been no change in the nature of the business of the company during the year under review.",
+    sharecap: 'The company is authorised to issue ordinary shares with no par value. At the financial year end, [X] ordinary shares had been issued and are fully paid up.',
     goingconcern: "The directors have reviewed the company's financial position and cash flows for the year under review. Based on this review, and having made appropriate enquiries, the directors have a reasonable expectation that the company has adequate resources to continue in operational existence for the foreseeable future. The annual financial statements have accordingly been prepared on the going concern basis.",
     events: 'The directors are not aware of any material events which occurred after the reporting date and up to the date of this report that would require adjustment to, or disclosure in, the annual financial statements.',
-    dividends: dividendsDefault,
+    dividends: 'No dividends were declared or paid during the year under review.',
     responsibilities: 'The directors are responsible for the preparation and fair presentation of the annual financial statements. The directors are also responsible for such internal controls as they determine necessary to enable the preparation of financial statements that are free from material misstatement.\n\nThese annual financial statements have been prepared on the going concern basis and the directors have no reason to believe that the company will not be a going concern in the foreseeable future.\n\nThe annual financial statements set out on the following pages were approved by the board of directors and are signed on its behalf by:',
     policies: 'The annual financial statements have been prepared on the historical cost basis, in accordance with the accounting policies set out below, which have been consistently applied throughout the current and prior year.\n\nBASIS OF PREPARATION\nThese financial statements have been compiled for the purpose of income tax submission and financial reporting to stakeholders. These statements are unaudited and unreviewed.\n\nREVENUE RECOGNITION\nRevenue comprises the fair value of consideration received or receivable for services rendered and goods sold in the ordinary course of business, net of value-added tax, rebates and discounts.\n\nPROPERTY, PLANT AND EQUIPMENT\nProperty, plant and equipment are stated at cost less accumulated depreciation and impairment losses. Depreciation is calculated on the straight-line basis at rates considered appropriate to reduce the carrying amount of each asset to its estimated residual value over its useful life.\n\nTRADE RECEIVABLES\nTrade receivables are measured at amortised cost less expected credit loss provisions.\n\nACCOUNTS PAYABLE\nAccounts payable are stated at cost.\n\nTAXATION\nThe taxation charge for the year comprises current tax. Current income tax is calculated on the basis of the tax laws enacted or substantively enacted at the reporting date.'
   };
@@ -6400,17 +5872,11 @@ function ensureAFS(){
   ensurePolicySections();
   if(!state.afs.draft) state.afs.draft = false;
   if(!state.afs.engagementType) state.afs.engagementType = 'compilation';
+  // Reviewer details (stored per client, visible only when engagementType=review)
   if(!state.afs.reviewerName)     state.afs.reviewerName     = '';
   if(!state.afs.reviewerCreds)    state.afs.reviewerCreds    = '';
   if(!state.afs.reviewerPractice) state.afs.reviewerPractice = '';
   if(!state.afs.reviewerReg)      state.afs.reviewerReg      = '';
-  // Statements to include — all default true
-  if(!state.afs.include) state.afs.include = {};
-  const incDef = ['partnersReport','responsibilities','compilationReport','policies',
-                   'bs','pl','soce','cf','notes','classpl'];
-  incDef.forEach(k=>{ if(state.afs.include[k]===undefined) state.afs.include[k]=true; });
-  // Which classes to include in supplementary P&L (default: all)
-  if(!state.afs.includedClasses) state.afs.includedClasses = null; // null = all
 }
 
 function updateAFS(){
@@ -6430,18 +5896,6 @@ function updateAFS(){
   state.afs.reviewerCreds    = document.getElementById('afs-reviewer-creds').value;
   state.afs.reviewerPractice = document.getElementById('afs-reviewer-practice').value;
   state.afs.reviewerReg      = document.getElementById('afs-reviewer-reg').value;
-  // Save include flags
-  ['partnersReport','responsibilities','compilationReport','policies',
-   'bs','pl','soce','cf','notes','classpl'].forEach(k=>{
-    const el = document.getElementById('afs-inc-'+k);
-    if(el) state.afs.include[k] = el.checked;
-  });
-  // Save included classes
-  const clsChecks = document.querySelectorAll('.afs-inc-class');
-  if(clsChecks.length){
-    state.afs.includedClasses = [...clsChecks].filter(c=>c.checked).map(c=>c.dataset.classid);
-  }
-  _markDirty();
 }
 
 // ── Roll Forward ───────────────────────────────────────────────────────────
@@ -6598,7 +6052,6 @@ function rollForward(){
   }
   populateAFSForm();
   _setSaveState('Roll forward complete — save this file as your 2025 JSON');
-  _markDirty();
 
   alert(
     '✓ Roll forward complete.\n\n' +
@@ -6633,6 +6086,7 @@ function populateAFSForm(){
   document.getElementById('afs-events').value           = state.afs.events        || d.events;
   document.getElementById('afs-dividends').value        = state.afs.dividends     || d.dividends;
   document.getElementById('afs-responsibilities').value = state.afs.responsibilities || d.responsibilities;
+  // Populate policies — then auto-correct BOP sentence if saved text contains the wrong variant
   let _savedPolicies = state.afs.policies || d.policies;
   document.getElementById('draft-toggle-cb').checked   = !!state.afs.draft;
   toggleDraft(!!state.afs.draft);
@@ -6645,57 +6099,6 @@ function populateAFSForm(){
   toggleReviewField();
   renderDirectorsTable();
   renderPolicySectionsUI();
-  renderAFSIncludePanel();
-}
-
-function renderAFSIncludePanel(){
-  ensureAFS();
-  const panel = document.getElementById('afs-include-panel');
-  if(!panel) return;
-  const inc = state.afs.include;
-  const et  = (state.client&&state.client.entityType)||'company';
-  const t   = _entityTerms();
-  const multiClass = !!(state.client&&state.client.multiClass);
-  const classes = (state.client&&state.client.classes)||[];
-  // Which classes are currently included (null = all)
-  const inclCls = state.afs.includedClasses; // null = all, array = specific IDs
-
-  const items = [
-    {key:'partnersReport',     label: t.reportTitle},
-    {key:'responsibilities',   label: t.respTitle},
-    {key:'compilationReport',  label: (state.afs.engagementType==='review') ? 'Independent Review Report' : 'Independent Preparation Report'},
-    {key:'policies',           label: 'Accounting Policies'},
-    {key:'bs',                 label: 'Statement of Financial Position'},
-    {key:'pl',                 label: 'Statement of Profit or Loss and Other Comprehensive Income'},
-    {key:'soce',               label: 'Statement of Changes in Equity'},
-    {key:'cf',                 label: 'Statement of Cash Flows'},
-    {key:'notes',              label: 'Notes to the Annual Financial Statements'},
-  ];
-  if(multiClass && classes.length){
-    items.push({key:'classpl', label: 'Supplementary P&L per Class'});
-  }
-
-  let html = items.map(item=>`
-    <label style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--rule);cursor:pointer;font-size:13px">
-      <input type="checkbox" id="afs-inc-${item.key}" ${inc[item.key]!==false?'checked':''} onchange="updateAFS()" style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent)">
-      <span>${item.label}</span>
-    </label>`).join('');
-
-  // Class checklist (only shown if supplementary P&L is ticked and multi-class on)
-  if(multiClass && classes.length && inc['classpl']!==false){
-    html += `<div style="margin:8px 0 0 25px;padding:8px 12px;background:var(--surface);border-radius:var(--radius)">
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-light);margin-bottom:6px">Classes to include in supplementary P&L:</div>
-      ${classes.map(cls=>{
-        const isIncl = !inclCls || inclCls.includes(cls.id);
-        return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:12px">
-          <input type="checkbox" class="afs-inc-class" data-classid="${cls.id}" ${isIncl?'checked':''} onchange="updateAFS()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
-          <span>${cls.name}</span>
-        </label>`;
-      }).join('')}
-    </div>`;
-  }
-
-  panel.innerHTML = html;
 }
 
 function toggleDraft(on){
@@ -6704,12 +6107,10 @@ function toggleDraft(on){
   document.body.classList.toggle('show-draft', on);
 }
 
-// ── Directors / Partners / Proprietor table ────────────────────────────────
+// ── Directors table ────────────────────────────────────────────────────────
 function addDirector(){
   ensureAFS();
-  const et = (state&&state.client&&state.client.entityType)||'company';
-  const defCap = et==='partnership' ? 'Partner' : et==='soleprop' ? 'Proprietor' : 'Director & Shareholder';
-  state.afs.directors.push({name:'',capacity:defCap,idno:'',shares:'',pct:''});
+  state.afs.directors.push({name:'',capacity:'Director & Shareholder',idno:'',shares:'',pct:''});
   renderDirectorsTable();
 }
 function delDirector(i){
@@ -6720,96 +6121,23 @@ function renderDirectorsTable(){
   ensureAFS();
   const tbody = document.getElementById('directors-body');
   if(!tbody) return;
-  const et = (state&&state.client&&state.client.entityType)||'company';
-  const t  = _entityTerms();
-
-  // Update AFS settings section labels to reflect entity type
-  const secTitle = document.getElementById('people-section-title');
-  if(secTitle) secTitle.textContent =
-    et==='partnership' ? 'Partners' :
-    et==='soleprop'    ? 'Proprietor' :
-    'Directors & Shareholders';
-
-  const addBtn = document.getElementById('add-person-btn');
-  if(addBtn) addBtn.textContent =
-    et==='partnership' ? '+ Add Partner' :
-    et==='soleprop'    ? '+ Add Proprietor' :
-    '+ Add Director / Shareholder';
-
-  const approvalTitle = document.getElementById('approval-section-title');
-  if(approvalTitle) approvalTitle.textContent =
-    et==='partnership' ? "Partners' Approval — Signing Details" :
-    et==='soleprop'    ? "Proprietor's Approval — Signing Details" :
-    "Directors' Approval — Signing Details";
-
-  const rpt = t.reportTitle;
-  const reportTitle = document.getElementById('report-section-title');
-  if(reportTitle) reportTitle.textContent = rpt+' — Nature of Business';
-
-  const capTitle = document.getElementById('sharecap-section-title');
-  if(capTitle) capTitle.textContent = rpt+' — '+t.capitalSection;
-
-  const gcTitle = document.getElementById('goingconcern-section-title');
-  if(gcTitle) gcTitle.textContent = rpt+' — Going Concern';
-
-  const evTitle = document.getElementById('events-section-title');
-  if(evTitle) evTitle.textContent = rpt+' — Events after Reporting Date';
-
-  const divTitle = document.getElementById('dividends-section-title');
-  if(divTitle) divTitle.textContent = rpt+' — '+(et==='company'?'Dividends':'Distributions / Drawings');
-
-  const respTitle = document.getElementById('responsibilities-section-title');
-  if(respTitle) respTitle.textContent = t.respTitle+' — Body Text';
-
-  // Table header
-  const thead = document.getElementById('directors-thead');
-  if(thead){
-    if(et==='partnership'){
-      thead.innerHTML = '<tr><th style="width:34%">Full Name</th><th style="width:22%">ID Number</th><th style="width:16%">% Interest</th><th style="width:36px" class="no-print"></th></tr>';
-    } else if(et==='soleprop'){
-      thead.innerHTML = '<tr><th style="width:50%">Full Name</th><th style="width:30%">ID Number</th><th style="width:36px" class="no-print"></th></tr>';
-    } else {
-      thead.innerHTML = '<tr><th style="width:28%">Full Name</th><th style="width:20%">Capacity</th><th style="width:18%">ID Number</th><th style="width:12%">Shares Held</th><th style="width:12%">% Interest</th><th style="width:36px" class="no-print"></th></tr>';
-    }
-  }
-
   tbody.innerHTML = '';
   const caps = ['Director','Shareholder','Director & Shareholder','Director only'];
   state.afs.directors.forEach((d,i)=>{
+    const capOpts = caps.map(c=>`<option value="${c}" ${c===d.capacity?'selected':''}>${c}</option>`).join('');
     const tr = document.createElement('tr');
-    if(et==='partnership'){
-      tr.innerHTML = `
-        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
-          oninput="state.afs.directors[${i}].name=this.value"></td>
-        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
-          oninput="state.afs.directors[${i}].idno=this.value"></td>
-        <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="50%"
-          oninput="state.afs.directors[${i}].pct=this.value"></td>
-        <td class="no-print" style="text-align:right">
-          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
-    } else if(et==='soleprop'){
-      tr.innerHTML = `
-        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
-          oninput="state.afs.directors[${i}].name=this.value"></td>
-        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
-          oninput="state.afs.directors[${i}].idno=this.value"></td>
-        <td class="no-print" style="text-align:right">
-          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
-    } else {
-      const capOpts = caps.map(c=>`<option value="${c}" ${c===d.capacity?'selected':''}>${c}</option>`).join('');
-      tr.innerHTML = `
-        <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
-          oninput="state.afs.directors[${i}].name=this.value"></td>
-        <td><select oninput="state.afs.directors[${i}].capacity=this.value">${capOpts}</select></td>
-        <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
-          oninput="state.afs.directors[${i}].idno=this.value"></td>
-        <td><input value="${(d.shares||'').replace(/"/g,'&quot;')}" placeholder="0"
-          oninput="state.afs.directors[${i}].shares=this.value"></td>
-        <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="100%"
-          oninput="state.afs.directors[${i}].pct=this.value"></td>
-        <td class="no-print" style="text-align:right">
-          <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
-    }
+    tr.innerHTML = `
+      <td><input value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Full Name"
+        oninput="state.afs.directors[${i}].name=this.value"></td>
+      <td><select oninput="state.afs.directors[${i}].capacity=this.value">${capOpts}</select></td>
+      <td><input value="${(d.idno||'').replace(/"/g,'&quot;')}" placeholder="ID Number"
+        oninput="state.afs.directors[${i}].idno=this.value"></td>
+      <td><input value="${(d.shares||'').replace(/"/g,'&quot;')}" placeholder="0"
+        oninput="state.afs.directors[${i}].shares=this.value"></td>
+      <td><input value="${(d.pct||'').replace(/"/g,'&quot;')}" placeholder="100%"
+        oninput="state.afs.directors[${i}].pct=this.value"></td>
+      <td class="no-print" style="text-align:right">
+        <button class="del-btn" onclick="delDirector(${i})">×</button></td>`;
     tbody.appendChild(tr);
   });
 }
@@ -6837,45 +6165,29 @@ function printFullAFS(){
       .replace(/\{signDate\}/g,   state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]');
   }
 
-  // ── Entity type terms + combined adapt function ──
-  const _et  = _entityTerms();
-  const _etCode = (state&&state.client&&state.client.entityType)||'company';
-
-  // Count named people. For company: count directors. For others: count all named rows.
-  const directorCount = _etCode==='company'
-    ? (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director')).length
-    : (state.afs.directors||[]).filter(d=>d.name).length;
+  // ── Director/Directors pluralisation ──
+  // Count persons listed with a director capacity. Applied at render time only —
+  // stored boilerplate always uses plural so it reads naturally in the edit fields.
+  const directorCount = (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director')).length;
   const isSingleDirector = directorCount === 1;
 
-  // Combined: entity-type adaptation + director count pluralisation.
-  // _adaptText handles company→partner/proprietor; then pluralise handles plural→singular for single person.
+  // Apply singular/plural substitutions to rendered text.
+  // Replacements are ordered longest-first to avoid partial matches.
   function pluralise(txt){
-    // First adapt to entity type
-    let t = _adaptText(txt);
-    if(!t) return t;
-    // Then apply singular if only one person
-    if(!isSingleDirector) return t;
-    const role = _et.roleP; // e.g. 'directors', 'partners', 'proprietor'
-    const roleS = _et.roleS;
-    const rolePC = _et.rolePCap;
-    const roleSC = _et.roleSCap;
-    // For sole prop, roleP===roleS already, so no change needed
-    if(role===roleS) return t;
-    return t
-      .replace(new RegExp('\\bboard of '+role+'\\b','gi'), roleS)
-      .replace(new RegExp('\\bThe '+rolePC+' have reviewed\\b','g'), 'The '+roleSC+' has reviewed')
-      .replace(new RegExp('\\bthe '+role+' have a reasonable\\b','g'), 'the '+roleS+' has a reasonable')
-      .replace(new RegExp('\\bthe '+role+' have no reason\\b','g'), 'the '+roleS+' has no reason')
-      .replace(new RegExp('\\bThe '+rolePC+' are also responsible\\b','g'), 'The '+roleSC+' is also responsible')
-      .replace(new RegExp('\\bThe '+rolePC+' are responsible\\b','g'), 'The '+roleSC+' is responsible')
-      .replace(new RegExp('\\bThe '+rolePC+' are not aware\\b','g'), 'The '+roleSC+' is not aware')
-      .replace(new RegExp('\\bthe '+role+' are\\b','gi'), 'the '+roleS+' is')
-      .replace(new RegExp('\\bthe '+role+'\\b','gi'), 'the '+roleS)
-      .replace(new RegExp('\\bThe '+rolePC+'\\b','g'), 'The '+roleSC)
-      .replace(new RegExp("\\b"+rolePC+"'\\s+Report\\b",'g'), roleSC+"'s Report")
-      .replace(new RegExp("\\b"+rolePC+"'\\s+Responsibilities\\b",'g'), roleSC+"'s Responsibilities")
-      .replace(new RegExp('\\b'+role+'\\b','g'), roleS)
-      .replace(new RegExp('\\b'+rolePC+'\\b','g'), roleSC);
+    if(!txt || !isSingleDirector) return txt;
+    return txt
+      .replace(/\bboard of directors\b/gi,            'director')
+      .replace(/\bThe directors have reviewed\b/g,    'The director has reviewed')
+      .replace(/\bthe directors have a reasonable\b/g,'the director has a reasonable')
+      .replace(/\bthe directors have no reason\b/g,   'the director has no reason')
+      .replace(/\bThe directors are also responsible\b/g,'The director is also responsible')
+      .replace(/\bThe directors are responsible\b/g,  'The director is responsible')
+      .replace(/\bThe directors are not aware\b/g,    'The director is not aware')
+      .replace(/\bthe directors are\b/gi,             'the director is')
+      .replace(/\bthe directors\b/gi,                 'the director')
+      .replace(/\bDirectors'\s+Report\b/g,            "Director's Report")
+      .replace(/\bDirectors'\s+Responsibilities\b/g,  "Director's Responsibilities")
+      .replace(/\bdirectors\b/g,                      'director');
   }
 
   // ── Cover ──
@@ -6908,30 +6220,18 @@ function printFullAFS(){
       ${[s.address,s.phone,s.email,s.website].filter(Boolean).join(' · ')}
     </div>`;
 
-  // ── Resolve include flags (default all true) ──
-  ensureAFS();
-  const _inc = state.afs.include || {};
-  function _included(key){ return _inc[key] !== false; }
-
-  // ── Index — only lists what's actually included ──
-  const indexItems = [];
-  if(_included('partnersReport'))    indexItems.push([pluralise(_et.reportTitle), '']);
-  if(_included('responsibilities'))  indexItems.push([pluralise(_et.respTitle), '']);
-  if(_included('compilationReport')) indexItems.push([isReview ? 'Independent Review Report' : 'Independent Preparation Report', '']);
-  if(_included('policies'))          indexItems.push(['Accounting Policies', '']);
-  if(_included('bs'))                indexItems.push(['Statement of Financial Position', '']);
-  if(_included('pl'))                indexItems.push(['Statement of Profit or Loss and Other Comprehensive Income', '']);
-  if(_included('soce'))              indexItems.push(['Statement of Changes in Equity', '']);
-  if(_included('cf'))                indexItems.push(['Statement of Cash Flows', '']);
-  if(_included('notes'))             indexItems.push(['Notes to the Annual Financial Statements', '']);
-  const multiClassOn2 = !!(state.client&&state.client.multiClass);
-  const inclCls2 = state.afs.includedClasses;
-  const printClasses = multiClassOn2
-    ? (state.client.classes||[]).filter(c=> !inclCls2 || inclCls2.includes(c.id))
-    : [];
-  if(_included('classpl') && printClasses.length){
-    printClasses.forEach(cls=> indexItems.push(['Supplementary P&L — '+cls.name, '']));
-  }
+  // ── Index ──
+  const indexItems = [
+    [pluralise("Directors' Report"), ''],
+    [pluralise("Directors' Responsibilities and Approval"), ''],
+    [isReview ? 'Independent Review Report' : 'Independent Preparation Report', ''],
+    ['Accounting Policies', ''],
+    ['Statement of Financial Position', ''],
+    ['Statement of Profit or Loss and Other Comprehensive Income', ''],
+    ['Statement of Changes in Equity', ''],
+    ['Statement of Cash Flows', ''],
+    ['Notes to the Annual Financial Statements', ''],
+  ];
   document.getElementById('print-index').innerHTML = `
     <div class="afs-print-heading">INDEX</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
@@ -6939,124 +6239,72 @@ function printFullAFS(){
       ${indexItems.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
     </table>`;
 
-  // ── Directors' / Partners' / Proprietor's Report ──
-  const _prEl = document.getElementById('print-directors-report');
-  if(!_included('partnersReport')){
-    if(_prEl){ _prEl.innerHTML=''; _prEl.className=''; }
-  } else {
+  // ── Directors' Report ──
+  ensureAFS();
   const dirs = state.afs.directors||[];
   let dirTable = '';
   if(dirs.length){
-    // Build people table header and rows based on entity type
-    const pTableHead = _etCode==='partnership'
-      ? `<tr style="border-bottom:2px solid var(--rule)">
-          <th style="text-align:left;padding:4px 6px">Name</th>
-          <th style="text-align:left;padding:4px 6px">ID Number</th>
-          <th style="text-align:right;padding:4px 6px">% Interest</th>
-         </tr>`
-      : _etCode==='soleprop'
-      ? `<tr style="border-bottom:2px solid var(--rule)">
-          <th style="text-align:left;padding:4px 6px">Name</th>
-          <th style="text-align:left;padding:4px 6px">ID Number</th>
-         </tr>`
-      : `<tr style="border-bottom:2px solid var(--rule)">
-          <th style="text-align:left;padding:4px 6px">Name</th>
-          <th style="text-align:left;padding:4px 6px">Capacity</th>
-          <th style="text-align:left;padding:4px 6px">ID Number</th>
-          <th style="text-align:right;padding:4px 6px">Shares</th>
-          <th style="text-align:right;padding:4px 6px">Interest</th>
-         </tr>`;
-    const pTableRows = dirs.map(d=>{
-      if(_etCode==='partnership') return `<tr style="border-bottom:1px solid var(--rule)">
-        <td style="padding:4px 6px">${d.name||''}</td>
-        <td style="padding:4px 6px">${d.idno||''}</td>
-        <td style="padding:4px 6px;text-align:right">${d.pct||''}</td>
-      </tr>`;
-      if(_etCode==='soleprop') return `<tr style="border-bottom:1px solid var(--rule)">
-        <td style="padding:4px 6px">${d.name||''}</td>
-        <td style="padding:4px 6px">${d.idno||''}</td>
-      </tr>`;
-      return `<tr style="border-bottom:1px solid var(--rule)">
+    dirTable = `<div class="afs-print-section-title">Directors and Shareholders</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+      <thead><tr style="border-bottom:2px solid var(--rule)">
+        <th style="text-align:left;padding:4px 6px">Name</th>
+        <th style="text-align:left;padding:4px 6px">Capacity</th>
+        <th style="text-align:left;padding:4px 6px">ID Number</th>
+        <th style="text-align:right;padding:4px 6px">Shares</th>
+        <th style="text-align:right;padding:4px 6px">Interest</th>
+      </tr></thead>
+      <tbody>${dirs.map(d=>`<tr style="border-bottom:1px solid var(--rule)">
         <td style="padding:4px 6px">${d.name||''}</td>
         <td style="padding:4px 6px">${d.capacity||''}</td>
         <td style="padding:4px 6px">${d.idno||''}</td>
         <td style="padding:4px 6px;text-align:right">${d.shares||''}</td>
         <td style="padding:4px 6px;text-align:right">${d.pct||''}</td>
-      </tr>`;
-    }).join('');
-    const pSectionLabel = _etCode==='partnership' ? 'Partners'
-      : _etCode==='soleprop' ? 'Proprietor'
-      : 'Directors and Shareholders';
-    dirTable = `<div class="afs-print-section-title">${pSectionLabel}</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
-      <thead>${pTableHead}</thead>
-      <tbody>${pTableRows}</tbody>
+      </tr>`).join('')}</tbody>
     </table>`;
   }
-  const divDistLabel = _etCode==='company' ? 'Dividends'
-    : _etCode==='partnership' ? 'Distributions'
-    : 'Drawings';
   document.getElementById('print-directors-report').innerHTML = `
-    <div class="afs-print-heading">${pluralise(_et.reportTitle)}</div>
+    <div class="afs-print-heading">${pluralise("Directors' Report")}</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
     <div class="afs-print-section-title">Nature of Business</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('nature')))}</div>
-    <div class="afs-print-section-title">${_et.capitalSection}</div>
+    <div class="afs-print-section-title">Share Capital</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('sharecap')))}</div>
     ${dirTable}
     <div class="afs-print-section-title">Going Concern</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('goingconcern')))}</div>
     <div class="afs-print-section-title">Events after Reporting Date</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('events')))}</div>
-    <div class="afs-print-section-title">${divDistLabel}</div>
+    <div class="afs-print-section-title">Dividends</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('dividends')))}</div>`;
-  if(_prEl) _prEl.className = 'print-section';
-  } // end _included('partnersReport')
 
-  // ── Responsibilities & Approval ──
-  const _respEl = document.getElementById('print-responsibilities');
-  if(!_included('responsibilities')){
-    if(_respEl){ _respEl.innerHTML=''; _respEl.className=''; }
-  } else {
+  // ── Directors' Responsibilities ──
   const sigDate  = state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]';
   const sigPlace = state.afs.signingPlace || '[place]';
-  // For company: only directors sign. For partnership: all named partners sign. For sole prop: proprietor signs.
-  const sigPeople = _etCode==='company'
-    ? (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director'))
-    : (state.afs.directors||[]).filter(d=>d.name);
-  const roleLabel = _etCode==='company' ? 'Director' : _etCode==='partnership' ? 'Partner' : 'Proprietor';
-  const sigBlocks = sigPeople.length > 0
-    ? sigPeople.map(d=>`
+  // Build signature blocks for all directors (or fall back to single signing director)
+  const sigDirs = (state.afs.directors||[]).filter(d=>d.name&&(d.capacity||'').toLowerCase().includes('director'));
+  const sigBlocks = sigDirs.length > 0
+    ? sigDirs.map(d=>`
         <div class="sig-block" style="display:inline-block;min-width:220px;margin-right:40px;margin-top:32px;vertical-align:top">
           <div class="sig-line"></div>
           <div><strong>${d.name}</strong></div>
-          <div>${roleLabel}</div>
+          <div>Director</div>
           <div>Date: ${sigDate}</div>
           <div>Place: ${sigPlace}</div>
         </div>`).join('')
     : `<div class="sig-block">
         <div class="sig-line"></div>
-        <div><strong>${state.afs.signingDirector||'['+roleLabel+']'}</strong></div>
+        <div><strong>${state.afs.signingDirector||'[Director]'}</strong></div>
         <div>Date: ${sigDate}</div>
         <div>Place: ${sigPlace}</div>
       </div>`;
   document.getElementById('print-responsibilities').innerHTML = `
-    <div class="afs-print-heading">${pluralise(_et.respTitle)}</div>
+    <div class="afs-print-heading">${pluralise("Directors' Responsibilities and Approval")}</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('responsibilities')))}</div>
     <div style="margin-top:16px">${sigBlocks}</div>`;
-  if(_respEl) _respEl.className = 'print-section';
-  } // end _included('responsibilities')
 
   // ── Preparation / Review Report ──
-  const _compEl  = document.getElementById('print-compilation');
-  const _comp2El = document.getElementById('print-compilation-2');
-  if(!_included('compilationReport')){
-    if(_compEl) { _compEl.innerHTML='';  _compEl.className=''; }
-    if(_comp2El){ _comp2El.innerHTML=''; _comp2El.className=''; }
-  } else {
   const reportTitle = isReview ? 'Independent Review Report' : 'Independent Preparation Report';
-  const toTheLabel  = isSingleDirector ? _et.roleSCap : _et.toThe;
   const reportBody  = isReview
     ? fill(state.afs.reviewBody||'[Paste reviewer\'s letter text in AFS Details → Engagement Type → Review]')
     : pluralise(fill(s.compilationBody || DEFAULT_COMPILATION_BODY));
@@ -7066,9 +6314,12 @@ function printFullAFS(){
   const sigPractice = isReview ? rvPractice                     : s.practiceName;
   const sigReg      = isReview ? rvReg                          : s.practiceReg;
   if(isReview){
+    // Review report: two separate print-section divs = two genuine blank pages.
+    // Each print-section gets page-break-before:always from CSS.
+    // Screen shows a placeholder on page 1 only; printed pages are clean and empty.
     document.getElementById('print-compilation').innerHTML = `
       <div class="afs-print-heading">${reportTitle}</div>
-      <div class="afs-print-subheading">To the ${toTheLabel} of ${cn}</div>
+      <div class="afs-print-subheading">To the ${isSingleDirector?'Director':'Directors'} of ${cn}</div>
       <div class="no-print" style="margin-top:80px;text-align:center;color:var(--ink-light);font-size:13px;border:1px dashed var(--rule);padding:32px;border-radius:6px">
         ↓ Two blank pages reserved for reviewer's report — insert physical document here ↓
       </div>`;
@@ -7081,7 +6332,7 @@ function printFullAFS(){
     pc2c.innerHTML = '';
     document.getElementById('print-compilation').innerHTML = `
       <div class="afs-print-heading">${reportTitle}</div>
-      <div class="afs-print-subheading">To the ${toTheLabel} of ${cn}</div>
+      <div class="afs-print-subheading">To the Director${dirs.length>1?'s':''} of ${cn}</div>
       <div class="afs-print-body" style="margin-bottom:32px">${reportBody}</div>
       <div class="sig-block">
         <div class="sig-line"></div>
@@ -7090,15 +6341,9 @@ function printFullAFS(){
         ${sigPractice?`<div>${sigPractice}${sigReg?' Registration Number: '+sigReg:''}</div>`:''}
         <div>Date: ${today}</div>
       </div>`;
-    if(_compEl) _compEl.className = 'print-section';
   }
-  } // end _included('compilationReport')
 
   // ── Accounting Policies ──
-  const _polEl = document.getElementById('print-policies');
-  if(!_included('policies')){
-    if(_polEl){ _polEl.innerHTML=''; _polEl.className=''; }
-  } else {
   document.getElementById('print-policies').innerHTML = `
     <div class="afs-print-heading">Accounting Policies</div>
     <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
@@ -7119,6 +6364,7 @@ function printFullAFS(){
           }).join('');
           text = text.replace('[RATES]', rateLines);
         }
+        // Each paragraph separated by blank line becomes its own <p>
         const paras = text.split(/\n\n+/).filter(p=>p.trim());
         out += '<div style="margin-top:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;border-bottom:1px solid var(--rule);padding-bottom:3px">'+def.title+'</div>';
         paras.forEach(p=>{ out += '<p style="margin:4px 0">'+p.replace(/\n/g,'<br>')+'</p>'; });
@@ -7126,24 +6372,20 @@ function printFullAFS(){
       });
       return out;
     })()}</div>`;
-  if(_polEl) _polEl.className = 'print-section';
-  } // end _included('policies')
 
   // ── Render all financial statements and clone into fs-print-wrap ──
   autoUpdateReportDate();
-  const savedActiveClass = _plActiveClass;
-  _plActiveClass = null;
   renderBS(); renderPL(); renderCF(); renderSoCE(); renderNotes();
   ['pl-print-date','bs-print-date','cf-print-date','soce-print-date','notes-print-date'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.textContent = '';
   });
 
+  // Clone FS views into the print wrapper so they print outside the app div
   const wrap = document.getElementById('fs-print-wrap');
   wrap.innerHTML = '';
-
-  function _clonePage(srcId){
-    const src = document.getElementById(srcId);
+  ['view-bs','view-pl','view-soce','view-cf','view-notes'].forEach((id,idx)=>{
+    const src = document.getElementById(id);
     if(!src) return;
     const page = document.createElement('div');
     page.className = 'fs-page';
@@ -7152,54 +6394,7 @@ function printFullAFS(){
     inner.innerHTML = src.innerHTML;
     page.appendChild(inner);
     wrap.appendChild(page);
-  }
-
-  if(_included('bs'))   _clonePage('view-bs');
-  if(_included('pl'))   _clonePage('view-pl');
-  if(_included('soce')) _clonePage('view-soce');
-  if(_included('cf'))   _clonePage('view-cf');
-  if(_included('notes'))_clonePage('view-notes');
-
-  if(_included('classpl') && multiClassOn2 && printClasses.length){
-    const divPage = document.createElement('div');
-    divPage.className = 'fs-page';
-    divPage.innerHTML = `<div class="fs-page-inner">
-      <div style="padding-bottom:10px;border-bottom:2px solid var(--ink);margin-bottom:20px">
-        <h2 style="font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0">
-          SUPPLEMENTARY INFORMATION
-        </h2>
-        <p style="font-size:11px;color:var(--ink-light);margin:4px 0 0">
-          Statement of Profit or Loss by Class — ${cn}${reg?' | Reg No: '+reg:''} | For the period ended ${pe}
-        </p>
-      </div>
-      <p style="font-size:12px;color:var(--ink-light)">
-        The following pages present the statement of profit or loss analysed by class of activity.
-        These supplementary schedules form part of the annual financial statements.
-      </p>
-    </div>`;
-    wrap.appendChild(divPage);
-
-    printClasses.forEach(cls=>{
-      _plActiveClass = cls.id;
-      renderPL(); // renderPL now sets pl-class-line bold heading automatically
-      const pdEl = document.getElementById('pl-print-date');
-      if(pdEl) pdEl.textContent = '';
-      // pl-class-line is set by renderPL — no need to patch pl-client-line
-
-      const src = document.getElementById('view-pl');
-      if(!src) return;
-      const page = document.createElement('div');
-      page.className = 'fs-page';
-      const inner = document.createElement('div');
-      inner.className = 'fs-page-inner';
-      inner.innerHTML = src.innerHTML;
-      page.appendChild(inner);
-      wrap.appendChild(page);
-    });
-  }
-
-  _plActiveClass = savedActiveClass;
-  renderPL();
+  });
 
   document.documentElement.classList.add('print-all');
   const cleanup = ()=>{
@@ -7347,32 +6542,12 @@ function _defaultFileName(){
 
 function _setSaveState(msg){ document.getElementById('save-state').textContent = msg; }
 
-let _isDirty = false;
-// Any input or change event anywhere marks the file dirty.
-// This catches cashbook edits, note text fields, AFS boilerplate — everything.
-// _markClean() is called on save/load to reset.
-document.addEventListener('input',  ()=>{ if(!_isDirty) _markDirty(); });
-document.addEventListener('change', ()=>{ if(!_isDirty) _markDirty(); });
-function _markDirty(){
-  if(_isDirty) return;
-  _isDirty = true;
-  const ind = document.getElementById('unsaved-indicator');
-  if(ind) ind.style.display = 'flex';
-  if(ind) ind.style.alignItems = 'center';
-}
-function _markClean(){
-  _isDirty = false;
-  const ind = document.getElementById('unsaved-indicator');
-  if(ind) ind.style.display = 'none';
-}
-
 function _legacyDownload(json){
   const a = document.createElement('a');
   a.href = 'data:application/json,'+encodeURIComponent(json);
   a.download = _defaultFileName();
   a.click();
   _setSaveState('Downloaded: '+_defaultFileName());
-  _markClean();
 }
 
 async function saveFileJSON(){
@@ -7384,7 +6559,6 @@ async function saveFileJSON(){
         await writable.write(json);
         await writable.close();
         _setSaveState('✓ Saved: '+_fileHandle.name);
-        _markClean();
         return;
       }
       _fileHandle = await window.showSaveFilePicker({
@@ -7395,7 +6569,6 @@ async function saveFileJSON(){
       await writable.write(json);
       await writable.close();
       _setSaveState('✓ Saved: '+_fileHandle.name);
-      _markClean();
     } catch(err){
       if(err.name!=='AbortError') _legacyDownload(json);
     }
@@ -7424,7 +6597,6 @@ async function saveAsFileJSON(){
       await writable.write(json);
       await writable.close();
       _setSaveState('Saved: '+_fileHandle.name+' ✓');
-      _markClean();
     } catch(err){
       if(err.name!=='AbortError') _legacyDownload(json);
     }
@@ -7529,7 +6701,6 @@ function _loadStateFromJSON(text, filename){
       }
     });
     _setSaveState('Loaded: '+filename+(_fileHandle?' — Save will overwrite silently':' — Save will prompt for location'));
-    _markClean();
     document.getElementById('file-label').textContent = filename;
     const _tbf = document.getElementById('top-bar-filename');
     if(_tbf){ _tbf.textContent = filename; _tbf.classList.remove('no-file'); }
@@ -7888,7 +7059,6 @@ function generateImportEntry(slot){
   };
 
   state.transactions.push(entry);
-  _markDirty();
   updateTBIEntryStatus(slot);
   document.getElementById('tbi-entry-status-'+slot).textContent = '✓ Entry posted — dated '+fmtDate(date);
   renderTxns();
@@ -8135,7 +7305,7 @@ function _applyFilters(lines, f){
   return lines.filter(l=>{
     if(f.dateFrom && l.date < f.dateFrom) return false;
     if(f.dateTo   && l.date > f.dateTo)   return false;
-    if(f.desc && !(l.description||'').toLowerCase().includes(f.desc) && !(l.payee||'').toLowerCase().includes(f.desc)) return false;
+    if(f.desc && !(l.description||'').toLowerCase().includes(f.desc)) return false;
     const inAmt  = l.moneyIn||0;
     const outAmt = l.moneyOut||0;
     // Money In direction filter
@@ -8539,7 +7709,6 @@ function saveContactModal(){
   } else {
     state.contacts.push(record);
   }
-  _markDirty();
   closeContactModal();
   renderContacts();
   _rebuildPayeeDatalist();
@@ -8548,7 +7717,6 @@ function saveContactModal(){
 function deleteContact(id){
   if(!confirm('Delete this contact? This cannot be undone.'))return;
   state.contacts=(state.contacts||[]).filter(c=>c.id!==id);
-  _markDirty();
   renderContacts();
   _rebuildPayeeDatalist();
 }
@@ -9175,7 +8343,6 @@ function _postLine(cb, line){
   };
   if(line.payee) txn.payee=line.payee;
   state.transactions.push(txn);
-  _markDirty();
   line.posted=true;
   line.journalId=journalId;
 }
@@ -10112,23 +9279,13 @@ function _sjnlSwitchTab(tab){
   const pt = document.getElementById('sjnl-tab-posted');
   if(dt){ dt.style.color=isDraft?'var(--accent)':'var(--ink-light)'; dt.style.borderBottomColor=isDraft?'var(--accent)':'transparent'; dt.style.fontWeight=isDraft?'600':'500'; }
   if(pt){ pt.style.color=!isDraft?'var(--accent)':'var(--ink-light)'; pt.style.borderBottomColor=!isDraft?'var(--accent)':'transparent'; pt.style.fontWeight=!isDraft?'600':'500'; }
-  // Panel visibility (body)
+  // Panel visibility
   const dp=document.getElementById('sjnl-draft-panel'); if(dp) dp.style.display=isDraft?'':'none';
   const pp=document.getElementById('sjnl-posted-panel'); if(pp) pp.style.display=!isDraft?'':'none';
-  // Header panel visibility
-  const dph=document.getElementById('sjnl-draft-panel-header'); if(dph) dph.style.display=isDraft?'':'none';
-  const pph=document.getElementById('sjnl-posted-panel-header'); if(pph) pph.style.display=!isDraft?'':'none';
   // Toolbar button visibility
   ['sjnl-recurring-btn','sjnl-add-btn','sjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
   if(!isDraft) _renderSjnlPosted();
   else renderSalesJnlTable();
-}
-
-function _txnClearFilters(){
-  ['txn-search','txn-f-from','txn-f-to','txn-f-amin','txn-f-amax'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
-  renderTxns();
 }
 
 function _sjnlClearFilters(){
@@ -10367,9 +9524,6 @@ function _pjnlSwitchTab(tab){
   if(pt){ pt.style.color=!isDraft?'var(--accent)':'var(--ink-light)'; pt.style.borderBottomColor=!isDraft?'var(--accent)':'transparent'; pt.style.fontWeight=!isDraft?'600':'500'; }
   const dp=document.getElementById('pjnl-draft-panel'); if(dp) dp.style.display=isDraft?'':'none';
   const pp=document.getElementById('pjnl-posted-panel'); if(pp) pp.style.display=!isDraft?'':'none';
-  // Header panel visibility
-  const dph=document.getElementById('pjnl-draft-panel-header'); if(dph) dph.style.display=isDraft?'':'none';
-  const pph=document.getElementById('pjnl-posted-panel-header'); if(pph) pph.style.display=!isDraft?'':'none';
   ['pjnl-recurring-btn','pjnl-add-btn','purjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
   if(!isDraft) _renderPjnlPosted();
   else renderPurJnlTable();
