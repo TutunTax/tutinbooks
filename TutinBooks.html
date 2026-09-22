@@ -498,7 +498,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.0.2</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.0.3</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -3112,9 +3112,15 @@ function getBalancesSplit(overrideDate){
       const acct = state.accounts.find(a=>a.name===l.account);
       const isBS = acct && BS_CATS_LOCAL.has(acct.cat);
       if(isBS){
-        // BS: cumulative — all journals up to PY into PY; all up to CY into CY
-        if(_selPY && txnFYNum <= parseInt(_selPY,10)){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
-        if(_selCY && txnFYNum <= parseInt(_selCY,10)){ cy[l.account].dr+=l.debit||0; cy[l.account].cr+=l.credit||0; }
+        // BS accumulation:
+        // - Import snapshots accumulate cumulatively (fy ≤ sel) — they carry all prior history.
+        // - Manual journals use exact FY match only — same as P&L — so a fy=2025 manual
+        //   journal doesn't bleed into CY BS while being excluded from CY P&L (which would
+        //   break the balance by the journal amount).
+        const isImport = txn.source==='qbo_import_cy'||txn.source==='qbo_import_py'||
+                         txn.source==='sage_import_cy'||txn.source==='sage_import_py';
+        if(_selPY && (isImport ? txnFYNum <= parseInt(_selPY,10) : isPY)){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
+        if(_selCY && (isImport ? txnFYNum <= parseInt(_selCY,10) : isCY)){ cy[l.account].dr+=l.debit||0; cy[l.account].cr+=l.credit||0; }
       } else {
         // P&L: exact FY only
         if(isPY){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
