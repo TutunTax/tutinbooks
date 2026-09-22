@@ -498,7 +498,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.0.3</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.0.4</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -3112,15 +3112,10 @@ function getBalancesSplit(overrideDate){
       const acct = state.accounts.find(a=>a.name===l.account);
       const isBS = acct && BS_CATS_LOCAL.has(acct.cat);
       if(isBS){
-        // BS accumulation:
-        // - Import snapshots accumulate cumulatively (fy ≤ sel) — they carry all prior history.
-        // - Manual journals use exact FY match only — same as P&L — so a fy=2025 manual
-        //   journal doesn't bleed into CY BS while being excluded from CY P&L (which would
-        //   break the balance by the journal amount).
-        const isImport = txn.source==='qbo_import_cy'||txn.source==='qbo_import_py'||
-                         txn.source==='sage_import_cy'||txn.source==='sage_import_py';
-        if(_selPY && (isImport ? txnFYNum <= parseInt(_selPY,10) : isPY)){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
-        if(_selCY && (isImport ? txnFYNum <= parseInt(_selCY,10) : isCY)){ cy[l.account].dr+=l.debit||0; cy[l.account].cr+=l.credit||0; }
+        // BS accounts accumulate cumulatively — all transactions (imports and manuals)
+        // with fy ≤ selectedFY contribute. Only P&L accounts reset per year.
+        if(_selPY && txnFYNum <= parseInt(_selPY,10)){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
+        if(_selCY && txnFYNum <= parseInt(_selCY,10)){ cy[l.account].dr+=l.debit||0; cy[l.account].cr+=l.credit||0; }
       } else {
         // P&L: exact FY only
         if(isPY){ py[l.account].dr+=l.debit||0; py[l.account].cr+=l.credit||0; }
@@ -4616,15 +4611,75 @@ function renderCF(){
   html+=`<tr class="fs-spacer"><td colspan="${cols}"></td></tr>`;
 
   // ── INVESTING ──
+  // Driven by PPE note rows — not net cost-account movements.
+  // Additions: from each row's additions value (manual or auto = costCY - costPY).
+  // Disposal proceeds: carrying amount disposed (row.disposals, stored as negative) +
+  //   profit on disposal (from non-cash P&L accounts whose name contains 'disposal' or 'sale of asset')
+  //   or − loss on disposal.
+  // Net investing = disposal proceeds − additions.
   let cyInvTotal=0,pyInvTotal=0,hasInv=false,invRows='';
-  tagged['investing'].forEach(a=>{
-    const cmv=cyMov(a.name), pmv=pyMov(a.name);
-    const cyAdj=-(cmv.dr-cmv.cr);
-    const pyAdj=-(pmv.dr-pmv.cr);
-    if(Math.abs(Math.round(cyAdj))<1 && Math.abs(Math.round(pyAdj))<1) return;
-    hasInv=true; cyInvTotal+=cyAdj; pyInvTotal+=pyAdj;
-    invRows+=`<tr class="fs-row"><td class="indent">${a.name}</td>${nc(cyAdj)}${pync(pyAdj)}</tr>`;
+
+  // Sum profit/(loss) on disposal from non-cash tagged P&L accounts (CY and PY)
+  let cyDispPL=0, pyDispPL=0;
+  state.accounts.forEach(a=>{
+    if(a.cfTag!=='non-cash') return;
+    const nm=a.name.toLowerCase();
+    if(!nm.includes('disposal')&&!nm.includes('sale of asset')) return;
+    // Income account: cr-dr = positive for profit, negative for loss
+    cyDispPL += (cy[a.name]?.cr||0)-(cy[a.name]?.dr||0);
+    pyDispPL += (py[a.name]?.cr||0)-(py[a.name]?.dr||0);
   });
+
+  // Collect PPE note rows across all PPE notes
+  const ppeRows=[];
+  (state.notes||[]).forEach(n=>{ if(n.type==='ppe'&&n.rows) ppeRows.push(...n.rows); });
+
+  if(ppeRows.length>0){
+    // Additions and carrying amount disposed — derived from PPE roll-forward per row.
+    // The disposals field stores the cost written off, NOT the carrying amount.
+    // Carrying amount disposed is derived: openCV + additions − dep charge − closeCV.
+    let cyAddsTotal=0, cyDispCATotal=0;
+    ppeRows.forEach(r=>{
+      if(!r.costAcct) return;
+      const costPY = (py[r.costAcct]?.dr||0)-(py[r.costAcct]?.cr||0);
+      const depPY  = r.depAcct ? Math.abs((py[r.depAcct]?.dr||0)-(py[r.depAcct]?.cr||0)) : 0;
+      const costCY = (cy[r.costAcct]?.dr||0)-(cy[r.costAcct]?.cr||0);
+      const depCY  = r.depAcct ? Math.abs((cy[r.depAcct]?.dr||0)-(cy[r.depAcct]?.cr||0)) : 0;
+      const depChg = r.expAcct ? Math.abs((cy[r.expAcct]?.dr||0)-(cy[r.expAcct]?.cr||0)) : 0;
+      const openCV  = costPY - depPY;
+      const closeCV = costCY - depCY;
+      const hasManualAdds = r.additions!==undefined && r.additions!=='';
+      const adds = hasManualAdds ? parseFloat(r.additions)||0 : (costCY - costPY);
+      const dispCA = openCV + adds - depChg - closeCV; // derived carrying amount disposed
+      cyAddsTotal   += adds;
+      cyDispCATotal += Math.max(dispCA, 0); // only positive (actual disposal rows)
+    });
+
+    // Disposal proceeds = carrying amount disposed + profit on disposal (or − loss)
+    const cyProceeds = cyDispCATotal + cyDispPL;
+
+    if(Math.abs(Math.round(cyAddsTotal))>=1){
+      hasInv=true;
+      invRows+=`<tr class="fs-row"><td class="indent">Additions to property, plant and equipment</td>${nc(-cyAddsTotal)}${pync(0)}</tr>`;
+      cyInvTotal+=-cyAddsTotal;
+    }
+    if(Math.abs(Math.round(cyProceeds))>=1){
+      hasInv=true;
+      invRows+=`<tr class="fs-row"><td class="indent">Proceeds on disposal of property, plant and equipment</td>${nc(cyProceeds)}${pync(0)}</tr>`;
+      cyInvTotal+=cyProceeds;
+    }
+  } else {
+    // Fallback: no PPE note — use net cost-account movements
+    tagged['investing'].forEach(a=>{
+      const cmv=cyMov(a.name), pmv=pyMov(a.name);
+      const cyAdj=-(cmv.dr-cmv.cr);
+      const pyAdj=-(pmv.dr-pmv.cr);
+      if(Math.abs(Math.round(cyAdj))<1 && Math.abs(Math.round(pyAdj))<1) return;
+      hasInv=true; cyInvTotal+=cyAdj; pyInvTotal+=pyAdj;
+      invRows+=`<tr class="fs-row"><td class="indent">${a.name}</td>${nc(cyAdj)}${pync(pyAdj)}</tr>`;
+    });
+  }
+
   if(hasInv){
     html+=sectionHdr('Investing Activities');
     html+=invRows;
