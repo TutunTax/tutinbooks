@@ -2736,9 +2736,13 @@ function renameCOA(idx,newName){
     if(l.account===oldName) l.account=newName;
   }));
 
-  // 2. Notes — accountLink (generic notes, borrowings, cash note, etc.)
+  // 2. Notes — accountLink (legacy field, borrowings, cash note, etc.) and
+  //    accountLinks (generic notes' multi-account links)
   (state.notes||[]).forEach(n=>{
     if(n.accountLink===oldName) n.accountLink=newName;
+    (n.accountLinks||[]).forEach(l=>{
+      if(l.account===oldName){ l.account=newName; if(l._autoLabel===oldName){ l.label=newName; l._autoLabel=newName; } }
+    });
     // 3. taxAcctLink (tax computation note)
     if(n.taxAcctLink===oldName) n.taxAcctLink=newName;
     // 4. PPE rows: costAcct, depAcct
@@ -3346,8 +3350,8 @@ function renderGL(){
 // ── Note reference helper ──────────────────────────────────────────────────
 function getNoteRef(accName){
   if(!state.notes||!state.notes.length) return '<td class="note-ref"></td>';
-  // Standard notes: match via accountLink field
-  let n=state.notes.find(n=>n.accountLink===accName);
+  // Standard notes: match via accountLinks array (or legacy single accountLink field)
+  let n=state.notes.find(n=>(Array.isArray(n.accountLinks)&&n.accountLinks.some(l=>l.account===accName))||n.accountLink===accName);
   // Receivables notes: match via any non-provision row's acct field
   if(!n) n=state.notes.find(n=>n.type==='receivables'&&n.rows&&n.rows.some(r=>!r.isProvision&&r.acct===accName));
   // Tax computation notes: match via taxAcctLink field
@@ -4743,6 +4747,113 @@ function accountOptions(selected){
       .map(a=>`<option value="${a.name}" ${a.name===selected?'selected':''}>${a.name}</option>`).join('');
 }
 
+// ── Generic note account links (multi-account, CY/PY figure line) ──────────
+// Categories whose face-value convention is credit-normal (cr - dr).
+// Everything else (assets) is debit-normal (dr - cr). Mirrors the per-category
+// sign convention used in renderBS()'s section() calls; does not replicate the
+// BS's account-level flip exceptions (VAT / overdraft reclassification).
+const NOTE_CREDIT_NORMAL_CATS = new Set(['Current Liability','Non-Current Liability','Shareholders Loan Liability','Equity']);
+
+function addNoteAcctLink(i){
+  if(!Array.isArray(state.notes[i].accountLinks)) state.notes[i].accountLinks=[];
+  state.notes[i].accountLinks.push({account:'', label:''});
+  renderNotes();
+}
+function removeNoteAcctLink(i, li){
+  state.notes[i].accountLinks.splice(li,1);
+  renderNotes();renderBS();renderPL();
+}
+function setNoteAcctLinkAccount(i, li, val){
+  const link = state.notes[i].accountLinks[li];
+  link.account = val;
+  // Auto-fill the label from the account name when the label is still blank
+  // or still matches a previously auto-filled account name.
+  if(!link.label || link.label===link._autoLabel) { link.label = val; link._autoLabel = val; }
+  renderNotes();renderBS();renderPL();
+}
+
+// Builds the "Account Links" editor + CY/PY figures block for a generic note.
+function renderGenericNoteAcctSection(note, i){
+  const links = note.accountLinks || [];
+  let html = `<div class="no-print" style="border:1px solid var(--rule);border-radius:6px;margin-bottom:12px;overflow:hidden">
+    <div style="background:var(--surface);padding:6px 12px;font-size:11px;font-weight:600;color:var(--ink-light);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span>Account Links</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;white-space:nowrap">
+        <input type="checkbox" ${note.perAccountLines!==false?'checked':''} onchange="state.notes[${i}].perAccountLines=this.checked;renderNotes()">
+        Show individual account lines
+      </label>
+    </div>`;
+  links.forEach((l,li)=>{
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--rule)">
+      <select style="flex:1;height:30px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit"
+        onchange="setNoteAcctLinkAccount(${i},${li},this.value)">${accountOptions(l.account||'')}</select>
+      <input type="text" value="${(l.label||'').replace(/"/g,'&quot;')}" placeholder="Line label"
+        oninput="state.notes[${i}].accountLinks[${li}].label=this.value"
+        onblur="renderNotes()"
+        style="width:180px;height:30px;padding:0 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit">
+      <button class="del-btn" onclick="removeNoteAcctLink(${i},${li})" style="font-size:16px">×</button>
+    </div>`;
+  });
+  html += `<div style="padding:6px 12px;border-top:1px solid var(--rule)">
+      <button class="btn btn-ghost" onclick="addNoteAcctLink(${i})" style="font-size:12px;padding:4px 10px">+ Add account</button>
+    </div>
+  </div>`;
+
+  if(links.length===0){
+    html += `<div class="no-print" style="font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-dim,#fdeaea);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;margin-bottom:12px">⚠ At least one linked account is required.</div>`;
+    return html;
+  }
+
+  const fig = getNoteAcctFigures(note);
+  const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
+  const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+  const showRows = note.perAccountLines!==false && fig.rows.length>1;
+
+  html += `<table class="ppe-table"><thead><tr>
+    <th></th>
+    <th class="num" style="font-size:11px;color:var(--ink-light);text-align:center">${cyYear}<br><span style="font-weight:400">R</span></th>
+    ${fig.hasPY?`<th class="num" style="font-size:11px;color:var(--ink-light);text-align:center">${pyYear}<br><span style="font-weight:400">R</span></th>`:''}
+  </tr></thead><tbody>`;
+
+  if(showRows){
+    fig.rows.forEach(r=>{
+      html += `<tr class="fs-row"><td class="indent">${r.label}</td>
+        <td class="num">${fmtPL(Math.round(r.cy))}</td>
+        ${fig.hasPY?`<td class="num">${fmtPL(Math.round(r.py))}</td>`:''}
+      </tr>`;
+    });
+    html += `<tr class="fs-subtotal"><td><strong>Total</strong></td>
+      <td class="num" style="font-weight:700">${fmtPL(Math.round(fig.totCY))}</td>
+      ${fig.hasPY?`<td class="num" style="font-weight:700">${fmtPL(Math.round(fig.totPY))}</td>`:''}
+    </tr>`;
+  } else {
+    const singleLabel = fig.rows.length===1 ? fig.rows[0].label : 'Total';
+    html += `<tr class="fs-subtotal"><td><strong>${singleLabel}</strong></td>
+      <td class="num" style="font-weight:700">${fmtPL(Math.round(fig.totCY))}</td>
+      ${fig.hasPY?`<td class="num" style="font-weight:700">${fmtPL(Math.round(fig.totPY))}</td>`:''}
+    </tr>`;
+  }
+  html += `</tbody></table>`;
+  return html;
+}
+
+// Returns {rows:[{label,cy,py}], totCY, totPY, hasPY} for a generic note's linked accounts.
+function getNoteAcctFigures(note){
+  const {py, cy} = getBalancesSplit();
+  const hasPY = !!state.client.priorYearDate;
+  const rows=[]; let totCY=0, totPY=0;
+  (note.accountLinks||[]).forEach(link=>{
+    if(!link.account || !cy[link.account]) return;
+    const acct = state.accounts.find(a=>a.name===link.account);
+    const creditNormal = acct && NOTE_CREDIT_NORMAL_CATS.has(acct.cat);
+    const cyVal = creditNormal ? (cy[link.account].cr-cy[link.account].dr) : (cy[link.account].dr-cy[link.account].cr);
+    const pyVal = creditNormal ? (py[link.account].cr-py[link.account].dr) : (py[link.account].dr-py[link.account].cr);
+    totCY+=cyVal; totPY+=pyVal;
+    rows.push({label: link.label || link.account, cy:cyVal, py:pyVal});
+  });
+  return {rows, totCY, totPY, hasPY};
+}
+
 function renderNotes(){
   if(!state.notes) state.notes=[];
   const container=document.getElementById('notes-body');
@@ -4775,14 +4886,7 @@ function renderNotes(){
           oninput="state.notes[${i}].title=this.value" style="flex:1;">
         <button class="del-btn no-print" onclick="delNote(${i})" style="margin-left:4px;font-size:18px">×</button>
       </div>
-      <div class="form-group no-print" style="margin-bottom:8px;">
-        <label>Linked Account (note number appears on Balance Sheet &amp; P&amp;L)</label>
-        <select onchange="state.notes[${i}].accountLink=this.value;renderBS();renderPL();"
-          style="height:32px;padding:0 8px;border:1px solid var(--rule);border-radius:4px;font-size:13px;font-family:inherit;max-width:400px;">
-          ${accountOptions(note.accountLink||'')}
-        </select>
-      </div>
-      ${note.accountLink?`<div class="note-linked-to" style="font-size:11px;color:var(--ink-light);margin-bottom:6px;">Linked to: <strong>${note.accountLink}</strong></div>`:''}
+      ${renderGenericNoteAcctSection(note, i)}
       <div class="note-body-input" contenteditable="true" data-placeholder="Note content…"
         onblur="state.notes[${i}].body=this.innerText"
         >${(note.body||'').replace(/</g,'&lt;')}</div>`;
@@ -4796,7 +4900,7 @@ function addNote(){
   if(!state.notes) state.notes=[];
   const nums=state.notes.map(n=>parseInt(n.noteNum)).filter(n=>!isNaN(n));
   const nextNum=nums.length>0?Math.max(...nums)+1:1;
-  state.notes.push({id:uid(),noteNum:String(nextNum),title:'',body:'',accountLink:''});
+  state.notes.push({id:uid(),noteNum:String(nextNum),title:'',body:'',accountLinks:[],perAccountLines:true});
   renderNotes();
   const inputs=document.querySelectorAll('#notes-body .note-title-input');
   if(inputs.length) inputs[inputs.length-1].focus();
@@ -7009,6 +7113,16 @@ function _loadStateFromJSON(text, filename){
         if(!n.taxLabelPY)  n.taxLabelPY = 'Income tax';
         delete n.useSBC; // retired — was a hardcoded SBC calc reference row
       }
+    });
+    // Migrate generic (text) notes: single accountLink -> accountLinks array,
+    // so a note can link several accounts, each with its own editable line label.
+    (state.notes||[]).forEach(n=>{
+      const STRUCTURED_TYPES=['ppe','borrowings','cash','receivables','shareholders','taxcomputation'];
+      if(STRUCTURED_TYPES.includes(n.type)) return;
+      if(!Array.isArray(n.accountLinks)){
+        n.accountLinks = n.accountLink ? [{account:n.accountLink, label:n.accountLink}] : [];
+      }
+      if(n.perAccountLines===undefined) n.perAccountLines = true;
     });
     // ── FY migration ────────────────────────────────────────────────────────
     // Infer selectedCY, selectedPY and per-transaction fy for files built before
