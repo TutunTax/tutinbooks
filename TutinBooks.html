@@ -951,6 +951,16 @@
           <button class="btn btn-ghost btn-sm" onclick="resetReportDate()" title="Set to last day of month of latest transaction">↻ Use Latest Txn</button>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group w180">
+          <label>Period Start Date</label>
+          <input type="date" id="client-period-start" onchange="updateClientDetails()" title="Used only when there is no prior year. Leave blank for a full 12-month period.">
+        </div>
+        <div class="form-group w180">
+          <label>Prior Period Start Date</label>
+          <input type="date" id="client-py-start" onchange="updateClientDetails()" title="Only needed if the prior period was not a full 12 months. Leave blank for a full year.">
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -2275,11 +2285,10 @@
 <!-- Print sections: outside app div, populated by printFullAFS() -->
 <div id="print-cover"    class="print-section print-cover"></div>
 <div id="print-index"    class="print-section"></div>
-<div id="print-directors-report" class="print-section"></div>
 <div id="print-responsibilities" class="print-section"></div>
 <div id="print-compilation"      class="print-section"></div>
 <div id="print-compilation-2"></div>
-<div id="print-policies"         class="print-section"></div>
+<div id="print-directors-report" class="print-section"></div>
 
 <!-- FS print wrapper for full AFS print -->
 <div id="fs-print-wrap"></div>
@@ -2319,7 +2328,7 @@
 
 <script>
 let state = {
-  client: {name:"", reg:"", reportDate:"", reportDateManual:false, priorYearDate:"", multiClass:false, classes:[], defaultClassId:""},
+  client: {name:"", reg:"", reportDate:"", reportDateManual:false, priorYearDate:"", periodStart:"", priorPeriodStart:"", multiClass:false, classes:[], defaultClassId:""},
   contacts: [],
   accounts: [
     // ── Income ──
@@ -2500,6 +2509,8 @@ function ensureClient(){
   if(state.client.reportDate===undefined) state.client.reportDate='';
   if(state.client.reportDateManual===undefined) state.client.reportDateManual=false;
   if(state.client.priorYearDate===undefined) state.client.priorYearDate='';
+  if(state.client.periodStart===undefined) state.client.periodStart='';
+  if(state.client.priorPeriodStart===undefined) state.client.priorPeriodStart='';
   if(state.client.multiClass===undefined) state.client.multiClass=false;
   if(!Array.isArray(state.client.classes)) state.client.classes=[];
   if(state.client.defaultClassId===undefined) state.client.defaultClassId='';
@@ -2515,6 +2526,8 @@ function updateClientDetails(manualDateChange){
   state.client.phone   = (document.getElementById('client-phone')?.value||'').trim();
   state.client.email   = (document.getElementById('client-email')?.value||'').trim();
   state.client.priorYearDate = document.getElementById('client-prior-year-date').value;
+  state.client.periodStart = document.getElementById('client-period-start').value;
+  state.client.priorPeriodStart = document.getElementById('client-py-start').value;
   if(manualDateChange){
     state.client.reportDate = document.getElementById('client-report-date').value;
     state.client.reportDateManual = true;
@@ -2533,6 +2546,8 @@ function renderClientDetails(){
   const emEl  = document.getElementById('client-email');     if(emEl)   emEl.value   = state.client.email||'';
   document.getElementById('client-report-date').value      = state.client.reportDate||'';
   document.getElementById('client-prior-year-date').value  = state.client.priorYearDate||'';
+  document.getElementById('client-period-start').value     = state.client.periodStart||'';
+  document.getElementById('client-py-start').value         = state.client.priorPeriodStart||'';
   updatePrintHeaders();
 }
 
@@ -2647,6 +2662,52 @@ function fmtReportDate(d){
   return day+' '+months[parseInt(m,10)-1]+' '+y;
 }
 
+// ── Reporting period length ────────────────────────────────────────────────
+function _isoToUTC(s){ const [y,m,d]=s.split('-').map(Number); return Date.UTC(y,m-1,d); }
+function _monthsBetween(startISO,endISO){
+  if(!startISO||!endISO) return 12;
+  const days=(_isoToUTC(endISO)-_isoToUTC(startISO))/86400000+1;
+  if(days<=0) return 12;
+  return Math.max(1,Math.round(days/(365.25/12)));
+}
+// Months in the period ending endISO. Start = day after PY end if a PY exists, else the Period Start Date field.
+function periodMonths(endISO){
+  ensureClient();
+  endISO = endISO || state.client.reportDate;
+  let start='';
+  if(state.client.priorYearDate){
+    const [y,m,d]=state.client.priorYearDate.split('-').map(Number);
+    const n=new Date(Date.UTC(y,m-1,d+1));
+    start=n.toISOString().slice(0,10);
+  } else start=state.client.periodStart||'';
+  return _monthsBetween(start,endISO);
+}
+function priorPeriodMonths(){
+  ensureClient();
+  if(!state.client.priorYearDate||!state.client.priorPeriodStart) return 12;
+  return _monthsBetween(state.client.priorPeriodStart,state.client.priorYearDate);
+}
+// "year" or "N months"
+function periodWord(endISO){
+  const m=periodMonths(endISO);
+  return m===12 ? 'year' : (m+' month'+(m===1?'':'s'));
+}
+// "year ended 28 February 2026" / "7 months ended 30 September 2026"
+function periodPhrase(endISO){
+  return periodWord(endISO)+' ended '+fmtReportDate(endISO||state.client.reportDate);
+}
+function pyStar(){ return priorPeriodMonths()!==12 ? '*' : ''; }
+function updatePyNotes(){
+  const m=priorPeriodMonths();
+  const txt = (m!==12 && state.client.priorYearDate) ? '* Prior period was '+m+' month'+(m===1?'':'s') : '';
+  ['bs','pl','cf','soce'].forEach(p=>{
+    const tbl=document.getElementById(p+'-table'); if(!tbl) return;
+    let n=document.getElementById(p+'-py-note');
+    if(!n){ n=document.createElement('div'); n.id=p+'-py-note'; n.style.cssText='font-size:11px;color:var(--ink-light);margin-top:10px'; tbl.insertAdjacentElement('afterend',n); }
+    n.textContent=txt;
+  });
+}
+
 function updatePrintHeaders(){
   ensureClient();
   const name = state.client.name || '';
@@ -2654,8 +2715,9 @@ function updatePrintHeaders(){
   let line = '';
   if(name) line += name;
   if(reg) line += (name?' — ':'')+'Reg No: '+reg;
-  const reportDateStr = state.client.reportDate ? 'For the period ended '+fmtReportDate(state.client.reportDate) : '';
+  const reportDateStr = state.client.reportDate ? 'For the '+periodPhrase(state.client.reportDate) : '';
   if(reportDateStr) line += (line?' | ':'')+reportDateStr;
+  updatePyNotes();
   ['tb','pl','bs','cf','soce','notes'].forEach(p=>{
     const el = document.getElementById(p+'-client-line');
     if(el) el.textContent = line;
@@ -3608,7 +3670,7 @@ function renderPL(){
 
   // Header row
   const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
-  const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+  const pyYear = (state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year') + pyStar();
   html+=`<tr><th></th><th style="width:40px;white-space:nowrap;text-align:center;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 6px">Note</th><th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${cyYear}<br><span style="font-weight:400">R</span></th>${hasPY?`<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${pyYear}<br><span style="font-weight:400">R</span></th>`:''}</tr>`;
   html+=`<tr class="fs-group-header"><td colspan="${cols}">GROSS REVENUE</td></tr>`;
   html+=inc.rows;
@@ -3864,7 +3926,7 @@ function renderSoCE(){
 
   // ── PY block — unchanged ──
   if(hasPY){
-    html += sectionLabel('Year ended '+pyYear);
+    html += sectionLabel((priorPeriodMonths()===12?'Year':priorPeriodMonths()+' months')+' ended '+pyYear);
     html += balanceRow('Balance at '+pyOpenLabel, pyOpenSC, pyOpenRet, true);
     html += profitRow(0, pyProfit);
     html += balanceRow('Balance at '+pyYear, pyClosSC, pyClosRet, true);
@@ -3872,7 +3934,7 @@ function renderSoCE(){
   }
 
   // ── CY block ──
-  html += sectionLabel('Year ended '+cyYear);
+  html += sectionLabel((periodMonths()===12?'Year':periodMonths()+' months')+' ended '+cyYear);
   // Opening "as previously reported" (= PY closing, no PPA)
   const cyOpenLabelFull = hasPPA ? cyOpenLabel+' – as previously reported' : cyOpenLabel;
   html += balanceRow(cyOpenLabelFull, cyOpenSC, cyOpenRet, true);
@@ -4074,7 +4136,7 @@ function renderBS(){
 
   // Header row
   const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
-  const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+  const pyYear = (state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year') + pyStar();
   html+=`<tr><th></th><th style="width:40px;white-space:nowrap;text-align:center;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 6px">Note</th><th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${cyYear}<br><span style="font-weight:400">R</span></th>${hasPY?`<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${pyYear}<br><span style="font-weight:400">R</span></th>`:''}</tr>`;
 
   // Build PPE grouping map for Balance Sheet collapsing
@@ -4517,7 +4579,7 @@ function renderCF(){
   let html='';
 
   const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
-  const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+  const pyYear = (state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year') + pyStar();
 
   // Column header row — matches BS/PL style
   html+=`<tr><th></th><th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${cyYear}<br><span style="font-weight:400">R</span></th>${hasPY?`<th class="num" style="font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink-light);border-bottom:2px solid var(--rule);padding:8px 10px;min-width:90px">${pyYear}<br><span style="font-weight:400">R</span></th>`:''}</tr>`;
@@ -6585,6 +6647,7 @@ function printFullAFS(){
   function fill(txt){
     return (txt||'')
       .replace(/\{clientName\}/g, cn)
+      .replace(/for the period ended \{periodEnd\}/gi, 'for the '+periodWord(state.client.reportDate)+' ended {periodEnd}')
       .replace(/\{periodEnd\}/g,  pe)
       .replace(/\{signDate\}/g,   state.afs.signingDate ? fmtDate(state.afs.signingDate) : '[date]');
   }
@@ -6632,8 +6695,8 @@ function printFullAFS(){
       <div class="cover-company">${cn}</div>
       ${reg?`<div class="cover-reg">Registration Number: ${reg}</div>`:''}
       <div class="cover-divider"></div>
-      <div class="cover-period">Annual Financial Statements<br>For the period ended ${pe}</div>
-      ${pye?`<div class="cover-compiled">Comparative year ended ${pye}</div>`:''}
+      <div class="cover-period">Annual Financial Statements<br>For the ${periodPhrase(state.client.reportDate)}</div>
+      ${pye?`<div class="cover-compiled">Comparative ${priorPeriodMonths()===12?'year':priorPeriodMonths()+' months'} ended ${pye}</div>`:''}
       <div style="margin-top:48px;padding:12px 24px;border:1px solid var(--amber);border-radius:4px;font-size:12px;color:var(--amber);font-weight:600;display:inline-block">
         ${stampText}
       </div>
@@ -6646,19 +6709,19 @@ function printFullAFS(){
 
   // ── Index ──
   const indexItems = [
-    [pluralise("Directors' Report"), ''],
     [pluralise("Directors' Responsibilities and Approval"), ''],
     [isReview ? 'Independent Review Report' : 'Independent Preparation Report', ''],
-    ['Accounting Policies', ''],
+    [pluralise("Directors' Report"), ''],
     ['Statement of Financial Position', ''],
     ['Statement of Profit or Loss and Other Comprehensive Income', ''],
     ['Statement of Changes in Equity', ''],
     ['Statement of Cash Flows', ''],
+    ['Accounting Policies', ''],
     ['Notes to the Annual Financial Statements', ''],
   ];
   document.getElementById('print-index').innerHTML = `
     <div class="afs-print-heading">INDEX</div>
-    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
+    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the ${periodPhrase(state.client.reportDate)}</div>
     <table class="index-table">
       ${indexItems.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}
     </table>`;
@@ -6688,7 +6751,7 @@ function printFullAFS(){
   }
   document.getElementById('print-directors-report').innerHTML = `
     <div class="afs-print-heading">${pluralise("Directors' Report")}</div>
-    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
+    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the ${periodPhrase(state.client.reportDate)}</div>
     <div class="afs-print-section-title">Nature of Business</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('nature')))}</div>
     <div class="afs-print-section-title">Share Capital</div>
@@ -6723,7 +6786,7 @@ function printFullAFS(){
       </div>`;
   document.getElementById('print-responsibilities').innerHTML = `
     <div class="afs-print-heading">${pluralise("Directors' Responsibilities and Approval")}</div>
-    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
+    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the ${periodPhrase(state.client.reportDate)}</div>
     <div class="afs-print-body">${pluralise(fill(getAFS('responsibilities')))}</div>
     <div style="margin-top:16px">${sigBlocks}</div>`;
 
@@ -6768,9 +6831,9 @@ function printFullAFS(){
   }
 
   // ── Accounting Policies ──
-  document.getElementById('print-policies').innerHTML = `
+  const policiesHTML = `
     <div class="afs-print-heading">Accounting Policies</div>
-    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>
+    <div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the ${periodPhrase(state.client.reportDate)}</div>
     <div class="afs-print-body">${(()=>{
       ensureAFS(); ensurePolicySections();
       const isReview = (state.afs.engagementType||'compilation')=='review';
@@ -6808,14 +6871,15 @@ function printFullAFS(){
   // Clone FS views into the print wrapper so they print outside the app div
   const wrap = document.getElementById('fs-print-wrap');
   wrap.innerHTML = '';
-  ['view-bs','view-pl','view-soce','view-cf','view-notes'].forEach((id,idx)=>{
-    const src = document.getElementById(id);
-    if(!src) return;
+  updatePyNotes();
+  ['view-bs','view-pl','view-soce','view-cf','policies','view-notes'].forEach((id,idx)=>{
+    const src = id==='policies' ? null : document.getElementById(id);
+    if(!src && id!=='policies') return;
     const page = document.createElement('div');
     page.className = 'fs-page';
     const inner = document.createElement('div');
     inner.className = 'fs-page-inner';
-    inner.innerHTML = src.innerHTML;
+    inner.innerHTML = id==='policies' ? policiesHTML : src.innerHTML;
     page.appendChild(inner);
     wrap.appendChild(page);
   });
@@ -6884,7 +6948,7 @@ function printMgmtReport(){
   }
 
   // Subheading used across all pages
-  const subHd = `<div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the period ended ${pe}</div>`;
+  const subHd = `<div class="afs-print-subheading">${cn}${reg?' — Reg No: '+reg:''} | For the ${periodPhrase(mgmtDate)}</div>`;
 
   // ── Page 1: Cover ──
   const compiledByLine = `<div style="margin-top:40px;font-size:12px;color:var(--ink-light)">Prepared by: <strong>${s.compilerName||'[Compiler]'}</strong>${s.compilerCreds?' — '+s.compilerCreds:''}</div>${s.practiceName?`<div style="font-size:12px;color:var(--ink-light)">${s.practiceName}${s.practiceReg?' (Reg: '+s.practiceReg+')':''}</div>`:''}`;
@@ -6894,8 +6958,8 @@ function printMgmtReport(){
       <div class="cover-company">${cn}</div>
       ${reg?`<div class="cover-reg">Registration Number: ${reg}</div>`:''}
       <div class="cover-divider"></div>
-      <div class="cover-period">Management Accounts<br>For the period ended ${pe}</div>
-      ${pye?`<div class="cover-compiled" style="margin-top:8px;font-size:13px;color:var(--ink-light)">Comparative year ended ${pye}</div>`:''}
+      <div class="cover-period">Management Accounts<br>For the ${periodPhrase(mgmtDate)}</div>
+      ${pye?`<div class="cover-compiled" style="margin-top:8px;font-size:13px;color:var(--ink-light)">Comparative ${priorPeriodMonths()===12?'year':priorPeriodMonths()+' months'} ended ${pye}</div>`:''}
       <div style="margin-top:32px;padding:10px 20px;border:1px solid var(--amber);border-radius:4px;font-size:11px;color:var(--amber);font-weight:600;display:inline-block;margin-left:auto;margin-right:auto">
         These are unreviewed management accounts prepared for internal purposes only<br>and do not constitute Annual Financial Statements.
       </div>
