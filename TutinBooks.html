@@ -510,7 +510,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.6.0</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.7.0</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -4138,8 +4138,25 @@ const DEFAULT_POLICY_SECTIONS = [
     key:'forex', title:'Foreign Currency',
     defaultText:'Transactions denominated in foreign currencies are translated at the exchange rate ruling at the date of the transaction. Monetary assets and liabilities are translated at the closing rate and exchange differences are recognised in profit or loss.',
     on:false
+  },
+  {
+    key:'investprop', title:'Investment Properties',
+    defaultText:'Investment properties are properties held to earn rentals or for capital appreciation, or both. They are initially measured at cost, including transaction costs, and subsequently stated at cost less accumulated depreciation and impairment losses.',
+    on:false
   }
 ];
+
+// Find or create the saved entry for a policy key (older files lack newer keys)
+function _getOrCreatePolicy(key){
+  let s = state.afs.policySections.find(s=>s.key===key);
+  if(!s){
+    const def = DEFAULT_POLICY_SECTIONS.find(d=>d.key===key);
+    if(!def) return null;
+    s = {key:def.key, title:def.title, on:def.on, text:'', ppeRates:{}};
+    state.afs.policySections.push(s);
+  }
+  return s;
+}
 
 function ensurePolicySections(){
   if(!state.afs.policySections || !Array.isArray(state.afs.policySections)){
@@ -4174,7 +4191,7 @@ function renderPolicySectionsUI(){
           <input type="text" value="${rate.replace(/"/g,'&quot;')}" placeholder="e.g. 20% straight-line"
             style="width:200px;height:28px;padding:0 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit"
             onblur="updatePolicyRate('${def.key}','${g.title}',this.value)"
-            oninput="if(!state.afs.policySections)return;const s=state.afs.policySections.find(s=>s.key==='${def.key}');if(s){if(!s.ppeRates)s.ppeRates={};s.ppeRates['${g.title}']=this.value;}">
+            oninput="if(!state.afs.policySections)return;const s=_getOrCreatePolicy('${def.key}');if(s){if(!s.ppeRates)s.ppeRates={};s.ppeRates['${g.title}']=this.value;}">
         </div>`;
       });
       ratesHtml += '</div>';
@@ -4189,7 +4206,7 @@ function renderPolicySectionsUI(){
       ${isOn ? `<div style="padding:8px 12px">
         <textarea style="width:100%;min-height:80px;font-size:12px;font-family:inherit;border:1px solid var(--rule);border-radius:4px;padding:8px;resize:vertical;box-sizing:border-box"
           onblur="updatePolicySectionText('${def.key}',this.value)"
-          oninput="const s=state.afs.policySections&&state.afs.policySections.find(s=>s.key==='${def.key}');if(s)s.text=this.value;">${bodyText.replace(/</g,'&lt;')}</textarea>
+          oninput="const s=state.afs.policySections&&_getOrCreatePolicy('${def.key}');if(s)s.text=this.value;">${bodyText.replace(/</g,'&lt;')}</textarea>
         ${ratesHtml}
       </div>` : ''}
     </div>`;
@@ -4199,19 +4216,19 @@ function renderPolicySectionsUI(){
 
 function togglePolicySection(key){
   ensureAFS(); ensurePolicySections();
-  const s = state.afs.policySections.find(s=>s.key===key);
+  const s = _getOrCreatePolicy(key);
   if(s){ s.on = !s.on; renderPolicySectionsUI(); }
 }
 
 function updatePolicySectionText(key,text){
   ensureAFS(); ensurePolicySections();
-  const s = state.afs.policySections.find(s=>s.key===key);
+  const s = _getOrCreatePolicy(key);
   if(s) s.text = text;
 }
 
 function updatePolicyRate(key,groupTitle,rate){
   ensureAFS(); ensurePolicySections();
-  const s = state.afs.policySections.find(s=>s.key===key);
+  const s = _getOrCreatePolicy(key);
   if(s){ if(!s.ppeRates) s.ppeRates={}; s.ppeRates[groupTitle]=rate; }
 }
 
@@ -7350,6 +7367,7 @@ function printFullAFS(){
     window.removeEventListener('afterprint', cleanup);
   };
   window.addEventListener('afterprint', cleanup);
+  setPrintTitle('Annual Financial Statements');
   setTimeout(()=>window.print(), 300);
 }
 
@@ -7467,6 +7485,7 @@ function printMgmtReport(){
     window.removeEventListener('afterprint', cleanup);
   };
   window.addEventListener('afterprint', cleanup);
+  setPrintTitle('Management Accounts');
   setTimeout(()=>window.print(), 300);
 }
 
@@ -7714,12 +7733,44 @@ function _loadStateFromJSON(text, filename){
     if(state.qboRowsPY.length>0) renderMappingTable('py');
   } catch(e){ alert('Could not read file.'); }
 }
+// ── PDF file naming ────────────────────────────────────────────────────────
+// Browsers suggest document.title as the PDF file name, so set it just before printing.
+function _fileSafe(t){ return String(t||'').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim(); }
+function _fileDate(){
+  const d = (state.client && state.client.reportDate) || new Date().toISOString().split('T')[0];
+  const [y,m,day] = d.split('-');
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return parseInt(day,10)+' '+mon[parseInt(m,10)-1]+' '+y;
+}
+function setPrintTitle(label, extra){
+  const orig = document.title;
+  const parts = [];
+  if(state.afs && state.afs.draft) parts.push('DRAFT');
+  parts.push((state.client&&state.client.name)||'TutinBooks');
+  parts.push(label);
+  if(extra) parts.push(extra);
+  parts.push(_fileDate());
+  document.title = _fileSafe(parts.join(' - '));
+  const restore = ()=>{ document.title = orig; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+}
+function _activeViewPrintLabel(){
+  const v = document.querySelector('.view.active');
+  const id = v ? v.id.replace('view-','') : '';
+  const map = {tb:'Trial Balance', pl:'Statement of Profit or Loss', bs:'Statement of Financial Position',
+    cf:'Statement of Cash Flows', soce:'Statement of Changes in Equity', notes:'Notes', gl:'General Ledger',
+    afs:'Annual Financial Statements', coa:'Chart of Accounts', txn:'Transactions', contacts:'Contacts'};
+  return map[id] || 'Report';
+}
+function printWithTitle(label, extra){ setPrintTitle(label, extra); window.print(); }
+
 function exportPDF(){
   autoUpdateReportDate();
   ['tb-print-date','pl-print-date','bs-print-date','cf-print-date','notes-print-date'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.textContent='';
   });
+  setPrintTitle(_activeViewPrintLabel());
   window.print();
 }
 
@@ -10429,6 +10480,7 @@ function printDoc(id){
     </div>
   </div>`;
   document.documentElement.classList.add('print-invoice');
+  setPrintTitle('Tax Invoice', d.docNo||'');
   window.print();
   setTimeout(()=>document.documentElement.classList.remove('print-invoice'),500);
 }
@@ -11234,10 +11286,11 @@ function printContactStatement(contactId){
   const settings = JSON.parse(localStorage.getItem('tutinbooks_settings')||'{}');
   const pName = settings.practiceName||'';
   const stmtType = contact.type==='supplier' ? 'SUPPLIER STATEMENT' : 'DEBTOR STATEMENT';
+  const stmtLabel = contact.type==='supplier' ? 'Supplier Statement' : 'Debtor Statement';
 
   var topBar =
   '<div class="stmt-footer no-print" style="position:sticky;top:0;background:#fff;z-index:10;display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;border-bottom:2px solid #e5e7eb;margin-bottom:20px">'+
-    '<button onclick="window.print()" style="padding:6px 20px;background:#840811;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">&#128424; Print / Save PDF</button>'+
+    '<button onclick="printWithTitle(\''+stmtLabel+'\',decodeURIComponent(\''+encodeURIComponent(contact.name||'')+'\'))" style="padding:6px 20px;background:#840811;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">&#128424; Print / Save PDF</button>'+
     '<button onclick="document.documentElement.classList.remove(\'print-stmt\')" style="padding:6px 20px;background:#e5e7eb;color:#1a1a1a;border:none;border-radius:4px;font-size:12px;cursor:pointer">&times; Close</button>'+
     '<div style="display:flex;align-items:center;gap:6px;margin-left:12px">'+
       '<label style="font-size:11px;font-weight:600;color:#555">From</label>'+
@@ -11550,7 +11603,7 @@ function printUnpostedReport(){
     '</div>'+
 
     '<div class="stmt-footer no-print" style="margin-top:20px">'+
-      '<button onclick="window.print()" style="margin-bottom:8px;padding:6px 20px;background:#840811;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">\uD83D\uDDA8 Print / Save PDF</button>'+
+      '<button onclick="printWithTitle(\'Unposted Transactions\',decodeURIComponent(\''+encodeURIComponent(cb.name||'')+'\'))" style="margin-bottom:8px;padding:6px 20px;background:#840811;color:#fff;border:none;border-radius:4px;font-size:12px;cursor:pointer">\uD83D\uDDA8 Print / Save PDF</button>'+
       ' <button onclick="document.documentElement.classList.remove(\'print-unposted\')" style="margin-bottom:8px;padding:6px 20px;background:#e5e7eb;color:#1a1a1a;border:none;border-radius:4px;font-size:12px;cursor:pointer">&times; Close</button>'+
       '<br><span style="color:#aaa">'+(pName?pName+' \u00a0|\u00a0 ':'')+today+'</span>'+
     '</div>';
