@@ -510,7 +510,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.7.0</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.8.1</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -899,6 +899,7 @@
         <button class="btn btn-ghost" onclick="addReceivablesNote()" title="Insert a Trade Receivables gross/provision/net disclosure">+ Add Receivables Note</button>
         <button class="btn btn-ghost" onclick="addShareholdersNote()" title="Insert a Shareholders Loan movement disclosure">+ Add Shareholders Loan Note</button>
         <button class="btn btn-ghost" onclick="addTaxNote()" title="Insert a Tax Computation schedule">+ Add Tax Computation</button>
+        <button class="btn btn-ghost" onclick="addApportionmentNote()" title="Insert a Trade / Personal Use Apportionment disclosure">+ Add Apportionment Note</button>
       </div>
       <div id="notes-body"></div>
     </div>
@@ -3657,11 +3658,15 @@ function renderPL(){
     });
   });
 
+  const apportTradeNames = getApportionmentTradeNames();
+  const firstApportNote = state.notes && state.notes.find(n=>n.type==='apportionment');
+
   function sectionRows(cat, normalCr){
     let cyTotal=0, pyTotal=0, rows='';
     const acctsList = []; // collect for section total icon
     const pinWeight = a => a.pinnedCogs==='first' ? -1 : a.pinnedCogs==='last' ? 1 : 0;
     let deprRendered = false; // emit the collapsed depreciation line only once
+    let apportRendered = false; // emit the collapsed apportionment line only once
 
     [...state.accounts].filter(a=>a.cat===cat)
       .map((a,idx)=>({a,idx}))
@@ -3696,6 +3701,34 @@ function renderPL(){
           }
         }
         return; // always skip individual dep account lines
+      }
+
+      // Trade apportionment accounts — collapse into one line (presentation only; amounts still feed the totals)
+      if(apportTradeNames.has(a.name)){
+        if(!apportRendered){
+          apportRendered = true;
+          let aCY=0, aPY=0;
+          const aAccts=[];
+          apportTradeNames.forEach(name=>{
+            if(!cy[name]) return;
+            const acc = state.accounts.find(x=>x.name===name);
+            if(!acc || acc.cat!==cat) return;
+            const cn = normalCr?(cy[name].cr-cy[name].dr):(cy[name].dr-cy[name].cr);
+            const pn = normalCr?(py[name].cr-py[name].dr):(py[name].dr-py[name].cr);
+            aCY+=cn; aPY+=pn;
+            aAccts.push({name, cy:Math.round(cn)});
+          });
+          if(Math.round(aCY)!==0||Math.round(aPY)!==0){
+            cyTotal+=aCY; pyTotal+=aPY;
+            acctsList.push({name:'Trade apportionment household expenses', cy:aCY});
+            const apNoteNum = firstApportNote&&firstApportNote.noteNum;
+            const apRef = apNoteNum
+              ? `<td class="note-ref"><a onclick="jumpToNote(${JSON.stringify(apNoteNum)})">${apNoteNum}</a></td>`
+              : '<td class="note-ref"></td>';
+            rows+=`<tr class="fs-row"><td class="indent">Trade apportionment household expenses</td>${apRef}${numCell(aCY,false,aAccts,'Trade apportionment household expenses')}${hasPY?numCell(aPY):''}</tr>`;
+          }
+        }
+        return;
       }
 
       if(Math.round(cyNet)===0 && Math.round(pyNet)===0) return;
@@ -5085,6 +5118,7 @@ function renderNotes(){
     if(note.type==='receivables'){renderReceivablesNote(note,i,container);return;}
     if(note.type==='shareholders'){renderShareholdersNote(note,i,container);return;}
     if(note.type==='taxcomputation'){renderTaxNote(note,i,container);return;}
+    if(note.type==='apportionment'){renderApportionmentNote(note,i,container);return;}
     const div=document.createElement('div');
     div.className='note-card';
     div.id='note-anchor-'+(note.noteNum||'');
@@ -5997,6 +6031,157 @@ function renderBorrowingsNote(note, i, container){
 
   html += `<div style="padding:8px 12px;">
     <button class="btn btn-ghost btn-sm" onclick="state.notes[${i}].rows.push({label:'',security:'Secured',ncpAcct:'',cpAcct:''});renderNotes()">+ Add Contract Row</button>
+  </div></div>`;
+
+  div.innerHTML = html;
+  container.appendChild(div);
+}
+
+
+// ── Trade / Personal Use Apportionment Note ─────────────────────────────────
+// type:'apportionment' — one per client. Disclosure only: no journals, no effect on TB/P&L totals.
+// rows: [{label, tradeAccts:[names], personalAccts:[names]}]
+function addApportionmentNote(){
+  if(!state.notes) state.notes=[];
+  if(state.notes.find(n=>n.type==='apportionment')){
+    alert('A Trade / Personal Use Apportionment note already exists.');
+    return;
+  }
+  const nums=state.notes.map(n=>parseInt(n.noteNum)).filter(n=>!isNaN(n));
+  const nextNum=nums.length>0?Math.max(...nums)+1:1;
+  state.notes.push({
+    id:uid(), noteNum:String(nextNum), title:'Trade / Personal Use Apportionment',
+    type:'apportionment',
+    rows:[{label:'', tradeAccts:[], personalAccts:[]}]
+  });
+  renderNotes();
+}
+
+// Trade accounts linked in any apportionment note (collapsed into one P&L line)
+function getApportionmentTradeNames(){
+  const set=new Set();
+  (state.notes||[]).filter(n=>n.type==='apportionment'&&n.rows).forEach(n=>{
+    n.rows.forEach(r=>(r.tradeAccts||[]).forEach(a=>{ if(a) set.add(a); }));
+  });
+  return set;
+}
+
+function renderApportionmentNote(note, i, container){
+  const {py, cy} = getBalancesSplit();
+  const hasPY = !!state.client.priorYearDate;
+  const div = document.createElement('div');
+  div.className = 'note-card';
+  div.id = 'note-anchor-'+(note.noteNum||'');
+  const rows = note.rows || [];
+
+  const cyYear = state.client.reportDate ? fmtReportDate(state.client.reportDate) : 'Current Year';
+  const pyYear = state.client.priorYearDate ? fmtReportDate(state.client.priorYearDate) : 'Prior Year';
+
+  // Positive figures = debit minus credit, summed across linked accounts.
+  // Balance-sheet (e.g. Equity) accounts carry cumulative balances, so for those the
+  // year's MOVEMENT is used (CY balance less PY balance; PY balance less the balance before PY).
+  const BS_CATS = new Set(['Cash and Cash Equivalents','Current Asset','Non-Current Asset','Shareholders Loan Asset','Current Liability','Non-Current Liability','Shareholders Loan Liability','Equity']);
+  const selPY = getSelectedPY(), selCY = getSelectedCY(), endM = getFYEndMonth();
+  function balBeforePY(name){
+    if(!selPY) return 0;
+    let t=0;
+    state.transactions.forEach(txn=>{
+      const fy = txn.fy || (selCY && endM ? fyFromDate(txn.date, endM) : null);
+      if((parseInt(fy,10)||0) < selPY) txn.lines.forEach(l=>{ if(l.account===name) t+=(l.debit||0)-(l.credit||0); });
+    });
+    return t;
+  }
+  function sum(isCY, names){
+    const bal = isCY ? cy : py;
+    return (names||[]).reduce((t,n)=>{
+      if(!n || !bal[n]) return t;
+      let v = bal[n].dr - bal[n].cr;
+      if(BS_CATS.has(bal[n].cat)) v -= isCY ? (py[n].dr - py[n].cr) : balBeforePY(n);
+      return t+v;
+    },0);
+  }
+
+  let html = `<div class="note-header">
+    <div style="display:flex;align-items:center;gap:6px;min-width:0">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-light);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Note</span>
+      <input type="text" value="${(note.noteNum||'').toString().replace(/"/g,'&quot;')}" placeholder="1"
+        oninput="state.notes[${i}].noteNum=this.value.trim();this.closest('.note-card').id='note-anchor-'+this.value.trim();renderBS();renderPL();"
+        style="width:48px;height:28px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:13px;font-family:var(--mono);font-weight:600;text-align:center;">
+    </div>
+    <input class="note-title-input" value="${(note.title||'').replace(/"/g,'&quot;')}" placeholder="Note title…"
+      oninput="state.notes[${i}].title=this.value" style="flex:1;">
+    <span class="no-print" style="font-size:11px;background:var(--accent-dim);color:var(--accent);border-radius:3px;padding:2px 8px;white-space:nowrap">Apportionment</span>
+    <button class="del-btn no-print" onclick="delNote(${i})" style="margin-left:4px;font-size:18px">×</button>
+  </div>`;
+
+  function block(isCY, yearLabel){
+    const th = 'font-size:11px;color:var(--ink-light);text-align:center';
+    let t = `<table class="ppe-table" style="margin-bottom:14px"><thead><tr>
+      <th style="text-align:left;font-size:11px;color:var(--ink-light)">${yearLabel}</th>
+      <th class="num" style="${th}">Trade Use<br><span style="font-weight:400">R</span></th>
+      <th class="num" style="${th}">Personal Use<br><span style="font-weight:400">R</span></th>
+      <th class="num" style="${th}">Total Expense<br><span style="font-weight:400">R</span></th>
+      <th class="num" style="${th}">Trade %</th>
+    </tr></thead><tbody>`;
+    let tT=0, tP=0, any=false;
+    rows.forEach(r=>{
+      const tr = Math.round(sum(isCY,r.tradeAccts));
+      const pe = Math.round(sum(isCY,r.personalAccts));
+      if(tr===0 && pe===0) return;
+      any = true;
+      tT+=tr; tP+=pe;
+      const tot = tr+pe;
+      const pct = tot!==0 ? (tr/tot*100).toFixed(2)+'%' : '-';
+      t += `<tr class="fs-row"><td class="indent">${r.label||'—'}</td>
+        <td class="num">${tr?fmtAmt(tr):'-'}</td><td class="num">${pe?fmtAmt(pe):'-'}</td>
+        <td class="num">${tot?fmtAmt(tot):'-'}</td><td class="num">${pct}</td></tr>`;
+    });
+    if(!any) t += `<tr class="fs-row"><td class="indent" colspan="5">-</td></tr>`;
+    else t += `<tr class="fs-subtotal"><td colspan="5" style="border-top:1px solid var(--ink);padding:0"></td></tr>
+      <tr class="fs-total"><td style="font-weight:700">Total</td>
+        <td class="num" style="font-weight:700;border-bottom:3px double var(--ink)">${fmtAmt(tT)}</td>
+        <td class="num" style="font-weight:700;border-bottom:3px double var(--ink)">${fmtAmt(tP)}</td>
+        <td class="num" style="font-weight:700;border-bottom:3px double var(--ink)">${fmtAmt(tT+tP)}</td>
+        <td></td></tr>`;
+    return t + `</tbody></table>`;
+  }
+
+  html += block(true, cyYear);
+  if(hasPY) html += block(false, pyYear);
+
+  // ── Screen-only: account links ──
+  const sel = 'height:30px;padding:0 6px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:inherit';
+  function side(ri, key, label){
+    const list = rows[ri][key] || [];
+    let h = `<div style="margin-bottom:4px"><span style="font-size:11px;color:var(--ink-light)">${label}</span>`;
+    list.forEach((a,ai)=>{
+      h += `<div style="display:flex;gap:6px;margin-top:4px">
+        <select style="flex:1;${sel}" onchange="state.notes[${i}].rows[${ri}].${key}[${ai}]=this.value;renderNotes();renderPL()">${borrowingAcctOptions(a)}</select>
+        <button class="ppe-del-row-btn" onclick="state.notes[${i}].rows[${ri}].${key}.splice(${ai},1);renderNotes();renderPL()" title="Remove">×</button></div>`;
+    });
+    h += `<div style="margin-top:4px"><button class="btn btn-ghost btn-sm" onclick="(state.notes[${i}].rows[${ri}].${key}=state.notes[${i}].rows[${ri}].${key}||[]).push('');renderNotes()">+ Link account</button></div></div>`;
+    return h;
+  }
+
+  html += `<div class="no-print" style="margin-top:16px;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;">
+    <div style="padding:6px 12px;background:var(--surface);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-light);border-bottom:1px solid var(--rule);">
+      Expense Groups (screen only)
+    </div>`;
+  rows.forEach((r,ri)=>{
+    html += `<div style="padding:8px 12px;border-bottom:1px solid var(--rule);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <input class="ppe-name-input" value="${(r.label||'').replace(/"/g,'&quot;')}" placeholder="Expense description (e.g. Security)"
+          style="flex:1" oninput="state.notes[${i}].rows[${ri}].label=this.value">
+        <button class="ppe-del-row-btn" onclick="state.notes[${i}].rows.splice(${ri},1);renderNotes();renderPL()" title="Remove">×</button>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div style="flex:1">${side(ri,'tradeAccts','Trade Use accounts')}</div>
+        <div style="flex:1">${side(ri,'personalAccts','Personal Use accounts')}</div>
+      </div>
+    </div>`;
+  });
+  html += `<div style="padding:8px 12px;">
+    <button class="btn btn-ghost btn-sm" onclick="state.notes[${i}].rows.push({label:'',tradeAccts:[],personalAccts:[]});renderNotes()">+ Add Expense Group</button>
   </div></div>`;
 
   div.innerHTML = html;
@@ -7661,7 +7846,7 @@ function _loadStateFromJSON(text, filename){
     // Migrate generic (text) notes: single accountLink -> accountLinks array,
     // so a note can link several accounts, each with its own editable line label.
     (state.notes||[]).forEach(n=>{
-      const STRUCTURED_TYPES=['ppe','borrowings','cash','receivables','shareholders','taxcomputation'];
+      const STRUCTURED_TYPES=['ppe','borrowings','cash','receivables','shareholders','taxcomputation','apportionment'];
       if(STRUCTURED_TYPES.includes(n.type)) return;
       if(!Array.isArray(n.accountLinks)){
         n.accountLinks = n.accountLink ? [{account:n.accountLink, label:n.accountLink}] : [];
