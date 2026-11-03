@@ -510,7 +510,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.8.1</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.9.0</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -1621,6 +1621,8 @@
         <div class="spacer"></div>
         <button class="btn btn-ghost btn-sm" id="pjnl-recurring-btn" onclick="openRecurringModal('bill')">🔁 Recurring…</button>
         <button class="btn btn-ghost btn-sm" id="pjnl-add-btn" onclick="addPurJnlRow()">+ Add Row</button>
+        <button class="btn btn-ghost btn-sm" id="pjnl-import-btn" onclick="document.getElementById('pjnl-csv-input').click()" title="Import bills from a CSV file into the Draft Entry list">&#11014; Import CSV&hellip;</button>
+        <input type="file" id="pjnl-csv-input" accept=".csv,text/csv" style="display:none" onchange="importPurJnlCSV(event)">
         <button class="btn btn-primary" id="purjnl-post-btn" onclick="postPurJnl()">Post Selected</button>
       </div>
       <!-- Tabs -->
@@ -1646,13 +1648,14 @@
           </label>
         </div>
         <div style="overflow-x:auto">
-          <table id="pjnl-table" style="min-width:960px">
+          <table id="pjnl-table" style="min-width:1100px">
             <thead><tr>
               <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
               <th style="width:100px">Date</th>
               <th style="width:90px">Supplier Ref</th>
               <th style="width:150px">Contact</th>
               <th>Description</th>
+              <th style="width:150px">Document Link</th>
               <th style="width:130px">Account</th>
               <th style="width:100px">Class</th>
               <th class="num" style="width:110px">Amount (R)</th>
@@ -1706,7 +1709,7 @@
           <thead><tr>
             <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
             <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
-            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th>
+            <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th><th>Document</th>
           </tr></thead>
           <tbody id="pjnl-posted-body"></tbody>
         </table>
@@ -8148,8 +8151,8 @@ function _doParseQBO(buffer, slot){
 
   const header = rows[headerIdx].map(c=>c?c.toString().toLowerCase().trim():'');
   const nameCol = header.findIndex(h=>h.includes('full name')||h.includes('account name')||h==='account');
-  const drCol   = header.findIndex(h=>h==='debit');
-  const crCol   = header.findIndex(h=>h==='credit');
+  const drCol   = header.findIndex(h=>h==='debit'||h==='net debit');
+  const crCol   = header.findIndex(h=>h==='credit'||h==='net credit');
 
   const parsed = [];
   for(let i=headerIdx+1; i<rows.length; i++){
@@ -8157,7 +8160,7 @@ function _doParseQBO(buffer, slot){
     if(!row || !row[nameCol]) continue;
     const rawName = row[nameCol].toString().trim();
     // Skip totals/footer rows
-    if(rawName.toUpperCase()==='TOTAL'||rawName.toUpperCase().startsWith('ACCRUAL')||rawName.toUpperCase().startsWith('CASH BASIS')) continue;
+    if(rawName.toUpperCase()==='TOTAL'||rawName.toUpperCase().startsWith('TOTAL FOR')||rawName.toUpperCase().startsWith('ACCRUAL')||rawName.toUpperCase().startsWith('CASH BASIS')) continue;
     const dr = parseFloat(row[drCol])||0;
     const cr = parseFloat(row[crCol])||0;
     if(dr===0 && cr===0) continue;
@@ -10807,7 +10810,7 @@ function _pjnlUndoSelected(){
     var d = (state.documents||[]).find(function(x){return x.id===id;}); if(!d) return;
     if(d.journalId){ state.transactions=(state.transactions||[]).filter(function(t){return t.id!==d.journalId;}); d.journalId=null; }
     d.status='draft';
-    state.pjnlDraft.unshift({id:'pjr_'+uid(), date:d.date, docNo:d.docNo||'', contact:d.contact||'', desc:d.description||'', account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||'')});
+    state.pjnlDraft.unshift({id:'pjr_'+uid(), date:d.date, docNo:d.docNo||'', contact:d.contact||'', desc:d.description||'', account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||''), link:d.link||''});
     state.documents=state.documents.filter(function(x){return x.id!==id;});
   });
   _pjnlSwitchTab('draft');
@@ -10941,7 +10944,7 @@ function _pjnlSwitchTab(tab){
   if(pt){ pt.style.color=!isDraft?'var(--accent)':'var(--ink-light)'; pt.style.borderBottomColor=!isDraft?'var(--accent)':'transparent'; pt.style.fontWeight=!isDraft?'600':'500'; }
   const dp=document.getElementById('pjnl-draft-panel'); if(dp) dp.style.display=isDraft?'':'none';
   const pp=document.getElementById('pjnl-posted-panel'); if(pp) pp.style.display=!isDraft?'':'none';
-  ['pjnl-recurring-btn','pjnl-add-btn','purjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
+  ['pjnl-recurring-btn','pjnl-add-btn','pjnl-import-btn','purjnl-post-btn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=isDraft?'':'none'; });
   if(!isDraft) _renderPjnlPosted();
   else renderPurJnlTable();
 }
@@ -10979,9 +10982,9 @@ function _renderPjnlPosted(){
   if(tab) tab.textContent = anyFilter
     ? 'Posted ('+docs.length+' of '+all.length+')'
     : 'Posted ('+all.length+')';
-  if(!all.length){ tbody.innerHTML='<tr><td colspan="9" class="empty">No posted bills yet.</td></tr>';
+  if(!all.length){ tbody.innerHTML='<tr><td colspan="10" class="empty">No posted bills yet.</td></tr>';
     const tot=document.getElementById('pjnl-posted-totals'); if(tot) tot.innerHTML=''; return; }
-  if(!docs.length){ tbody.innerHTML='<tr><td colspan="9" class="empty">No bills match the current filters.</td></tr>';
+  if(!docs.length){ tbody.innerHTML='<tr><td colspan="10" class="empty">No bills match the current filters.</td></tr>';
     const tot=document.getElementById('pjnl-posted-totals'); if(tot) tot.innerHTML=''; return; }
   const vatVendor = !!state.client.vatVendor;
   let sumExcl=0, sumVat=0, sumTotal=0;
@@ -10994,14 +10997,15 @@ function _renderPjnlPosted(){
     var chk = _pjnlPC.has(did) ? 'checked' : '';
     return '<tr>'+
       '<td style="text-align:center"><input type="checkbox" data-id="'+did+'" '+chk+' onchange="_renderPjnlPosted()" style="cursor:pointer"></td>'+
-      '<td><span class="doc-pill doc-pill-bill">'+(d.docNo||'&mdash;')+'</span></td>'+
+      '<td><span class="doc-pill doc-pill-bill">'+(_pjnlEsc(d.docNo)||'&mdash;')+'</span></td>'+
       '<td>'+fmtDate(d.date)+'</td>'+
-      '<td>'+(d.contact||'&mdash;')+'</td>'+
-      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(d.description||'&mdash;')+'</td>'+
+      '<td>'+(_pjnlEsc(d.contact)||'&mdash;')+'</td>'+
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(_pjnlEsc(d.description)||'&mdash;')+'</td>'+
       '<td style="font-size:12px;color:var(--ink-light)">'+(d.accountName||'&mdash;')+'</td>'+
       '<td class="num">'+fmtAmt2(d.amtExcl||0)+'</td>'+
       '<td class="num">'+(vatVendor?fmtAmt2(d.vatAmt||0):'&mdash;')+'</td>'+
       '<td class="num" style="font-weight:600">'+fmtAmt2(d.total||0)+'</td>'+
+      '<td>'+(_pjnlLinkAnchor(d.link)||'&mdash;')+'</td>'+
       '</tr>';
   }).join('');
   var pjnlSA=document.getElementById('pjnl-posted-select-all');
@@ -11023,7 +11027,7 @@ function renderPurJnlView(){
 function addPurJnlRow(){
   _ensurePjnl();
   const id = 'pjr_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-  state.pjnlDraft.push({id, date:'', docNo:'', contact:'', desc:'', account:'', classId:'', amount:''});
+  state.pjnlDraft.push({id, date:'', docNo:'', contact:'', desc:'', account:'', classId:'', amount:'', link:''});
   renderPurJnlTable();
 }
 
@@ -11062,12 +11066,14 @@ function renderPurJnlTable(){
     const incl = excl+vat;
     totalExcl+=excl; totalVat+=vat; totalIncl+=incl;
     const checked = _pjnlChecked.has(r.id);
-    return `<tr style="${checked?'background:#fefce8;':''}">
+    const dup = _pjnlIsDup(r,i);
+    return `<tr style="${dup?'background:#fdecea;':(checked?'background:#fefce8;':'')}">
       <td style="text-align:center"><input type="checkbox" ${checked?'checked':''} onchange="_pjnlToggle('${r.id}',this.checked)" style="cursor:pointer"></td>
       <td><input type="text" value="${(r.date||'').replace(/-/g,'/')}" placeholder="YYYYMMDD" maxlength="10" oninput="_smartDateText(this);_pjnlSet(${i},'date',this.dataset.isoDate||'')" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)"></td>
-      <td><input type="text" value="${r.docNo}" oninput="_pjnlSet(${i},'docNo',this.value)" placeholder="Supplier ref" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)"></td>
-      <td><input type="text" value="${r.contact}" list="payee-datalist" oninput="_pjnlSet(${i},'contact',this.value)" placeholder="Supplier" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px" autocomplete="off"></td>
-      <td><input type="text" value="${r.desc}" oninput="_pjnlSet(${i},'desc',this.value)" placeholder="Description" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px"></td>
+      <td><input type="text" value="${_pjnlEsc(r.docNo)}" oninput="_pjnlSet(${i},'docNo',this.value)" placeholder="Supplier ref" ${dup?'title="Duplicate: a bill with this supplier and reference already exists"':''} style="width:100%;height:28px;border:1px solid ${dup?'#c0392b':'var(--rule)'};border-radius:3px;font-size:12px;padding:0 4px;font-family:var(--mono)">${dup?'<div style="font-size:10px;color:#c0392b;font-weight:600">&#9888; Duplicate</div>':''}</td>
+      <td><input type="text" value="${_pjnlEsc(r.contact)}" list="payee-datalist" oninput="_pjnlSet(${i},'contact',this.value)" placeholder="Supplier" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px" autocomplete="off"></td>
+      <td><input type="text" value="${_pjnlEsc(r.desc)}" oninput="_pjnlSet(${i},'desc',this.value)" placeholder="Description" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px"></td>
+      <td><div style="display:flex;align-items:center;gap:4px"><input type="text" value="${_pjnlEsc(r.link||'')}" oninput="_pjnlSet(${i},'link',this.value.trim())" onblur="renderPurJnlTable()" placeholder="Paste link" style="flex:1;min-width:0;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">${_pjnlLinkAnchor(r.link)}</div></td>
       <td><select onchange="_pjnlSet(${i},'account',this.value)" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px">${acctOpts.replace(`value="${r.account}"`,`value="${r.account}" selected`)}</select></td>
       <td>${classes.length&&state.client.multiClass?`<select onchange="_pjnlSet(${i},'classId',this.value)" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px">${classOpts.replace(`value="${r.classId}"`,`value="${r.classId}" selected`)}</select>`:'—'}</td>
       <td><input type="number" value="${r.amount}" oninput="_pjnlSet(${i},'amount',this.value)" onblur="renderPurJnlTable()" placeholder="0.00" step="0.01" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;text-align:right;font-family:var(--mono)"></td>
@@ -11082,6 +11088,140 @@ function renderPurJnlTable(){
   const inclEl=document.getElementById('pjnl-total-incl');if(inclEl)inclEl.textContent=fmtR(totalIncl);
   const sa=document.getElementById('pjnl-select-all');
   if(sa) sa.checked = state.pjnlDraft.length>0 && state.pjnlDraft.every(r=>_pjnlChecked.has(r.id));
+}
+
+// ── Purchases Journal: CSV import, document links ──────────────────────────
+function _pjnlEsc(v){
+  return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// Clickable link only for http(s) URLs (never javascript: etc.)
+function _pjnlLinkAnchor(url){
+  const u = String(url||'').trim();
+  if(!/^https?:\/\//i.test(u)) return '';
+  return '<a href="'+_pjnlEsc(u)+'" target="_blank" rel="noopener noreferrer" title="Open supporting document" style="text-decoration:none;font-size:12px;white-space:nowrap">&#8599; Open</a>';
+}
+// Duplicate = same supplier + supplier ref as a posted bill, or as an earlier draft row
+function _pjnlIsDup(r,i){
+  const ref=(r.docNo||'').trim().toLowerCase(), c=(r.contact||'').trim().toLowerCase();
+  if(!ref||!c) return false;
+  if((state.documents||[]).some(d=>(d.type==='bill'||d.type==='supplierreturn')&&(d.contact||'').trim().toLowerCase()===c&&(d.docNo||'').trim().toLowerCase()===ref)) return true;
+  return (state.pjnlDraft||[]).some((o,j)=>j<i&&(o.docNo||'').trim().toLowerCase()===ref&&(o.contact||'').trim().toLowerCase()===c);
+}
+function _parseCSV(text, delim){
+  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){
+      if(ch==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=ch;
+    } else if(ch==='"'){ q=true; }
+    else if(ch===delim){ row.push(cur); cur=''; }
+    else if(ch==='\n'||ch==='\r'){ if(ch==='\r'&&text[i+1]==='\n') i++; row.push(cur); cur=''; rows.push(row); row=[]; }
+    else cur+=ch;
+  }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+function importPurJnlCSV(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{ _importPurJnlCSVText(ev.target.result); }
+    catch(err){ alert('Could not import CSV: '+err.message); }
+  };
+  reader.readAsText(file,'utf-8');
+  e.target.value='';
+}
+function _importPurJnlCSVText(text){
+  ensureClient(); _ensurePjnl();
+  if(!state.contacts) state.contacts=[];
+  const firstLine=(text.replace(/^﻿/,'').split(/\r?\n/)[0]||'');
+  const delim = (firstLine.indexOf(',')===-1 && firstLine.indexOf(';')!==-1) ? ';' : ',';
+  const rows=_parseCSV(text,delim);
+  if(rows.length<2){ alert('The CSV has no data rows.'); return; }
+  const header=rows[0].map(h=>String(h).trim().toLowerCase());
+  const col=n=>header.indexOf(n);
+  const required=['date','supplier','supplier ref','description','amount'];
+  const missing=required.filter(n=>col(n)===-1);
+  if(missing.length){ alert('The CSV is missing required column(s): '+missing.join(', ')+'.\n\nExpected headers: Date, Supplier, Supplier Ref, Description, Account, Amount, Document Link.'); return; }
+  const cDate=col('date'), cSup=col('supplier'), cRef=col('supplier ref'), cDesc=col('description'), cAmt=col('amount'), cAcc=col('account'), cLink=col('document link');
+  const get=(r,c)=>(c>-1&&r[c]!=null)?String(r[c]).trim():'';
+
+  const acctMap={}; state.accounts.forEach(a=>{ acctMap[a.name.toLowerCase()]=a.name; });
+  const contactMap={}; state.contacts.forEach(c=>{ contactMap[c.name.toLowerCase()]=c.name; });
+
+  // Remove untouched blank placeholder rows so the import starts clean
+  state.pjnlDraft = state.pjnlDraft.filter(r=>r.date||r.docNo||r.contact||r.desc||r.account||r.amount||r.link);
+
+  const stats={rows:0, newSuppliers:[], badDate:0, badAmt:0, noSupplier:0, acctNotFound:0, badLink:0};
+  const added=[];
+  for(let k=1;k<rows.length;k++){
+    const r=rows[k];
+    // date
+    let date=get(r,cDate), iso='';
+    let m=date.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})$/) || date.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if(m){
+      const dt=new Date(+m[1],+m[2]-1,+m[3]);
+      if(dt.getFullYear()===+m[1]&&dt.getMonth()===+m[2]-1&&dt.getDate()===+m[3]) iso=m[1]+'-'+m[2]+'-'+m[3];
+    }
+    if(!iso) stats.badDate++;
+    // amount
+    let rawAmt=get(r,cAmt).replace(/[Rr\s]/g,'');
+    if(rawAmt.indexOf(',')>-1 && rawAmt.indexOf('.')===-1) rawAmt=rawAmt.replace(',','.');
+    rawAmt=rawAmt.replace(/,/g,'');
+    const amtNum=parseFloat(rawAmt);
+    if(isNaN(amtNum)||amtNum<=0) stats.badAmt++;
+    // supplier (create if new)
+    let sup=get(r,cSup);
+    if(!sup){ stats.noSupplier++; }
+    else {
+      const key=sup.toLowerCase();
+      if(contactMap[key]) sup=contactMap[key];
+      else {
+        state.contacts.push({
+          id:uid(), name:sup, firstName:'', lastName:'', company:'', cipc:'', idNo:'', taxRef:'',
+          type:'supplier', active:true, vatVendor:false, vatNo:'', taxExempt:false,
+          contactPerson:'', email:'', phone:'', mobile:'', address:'', terms:null, creditLimit:null,
+          coaLink:'', bank:'', bankAcct:'', branch:'', bankType:''
+        });
+        contactMap[key]=sup; stats.newSuppliers.push(sup);
+      }
+    }
+    // account (must exist in this client's chart)
+    let acc=get(r,cAcc), accName='';
+    if(acc){ accName=acctMap[acc.toLowerCase()]||''; if(!accName) stats.acctNotFound++; }
+    // link
+    const link=get(r,cLink);
+    if(link && !/^https?:\/\//i.test(link)) stats.badLink++;
+    added.push({
+      id:'pjr_'+uid()+'_'+k, date:iso, docNo:get(r,cRef), contact:sup, desc:get(r,cDesc),
+      account:accName, classId:'', amount:isNaN(amtNum)?'':amtNum.toFixed(2), link:link
+    });
+    stats.rows++;
+  }
+  state.pjnlDraft.push(...added);
+  const base=state.pjnlDraft.length-added.length;
+  let dups=0; added.forEach((r,j)=>{ if(_pjnlIsDup(r,base+j)) dups++; });
+
+  if(stats.newSuppliers.length){
+    if(typeof _rebuildPayeeDatalist==='function') _rebuildPayeeDatalist();
+    if(typeof renderContacts==='function') { try{ renderContacts(); }catch(_){} }
+  }
+  _pjnlSwitchTab('draft');
+  renderPurJnlTable();
+
+  let msg=stats.rows+' bill row'+(stats.rows===1?'':'s')+' added to the Draft Entry list for review.';
+  if(stats.newSuppliers.length) msg+='\n\n'+stats.newSuppliers.length+' new supplier'+(stats.newSuppliers.length===1?'':'s')+' created:\n  '+stats.newSuppliers.join('\n  ');
+  const warn=[];
+  if(dups) warn.push(dups+' duplicate'+(dups===1?'':'s')+' (supplier + ref already exists) — highlighted in red');
+  if(stats.acctNotFound) warn.push(stats.acctNotFound+' with an account not found in this client\'s chart — left blank');
+  if(stats.badDate) warn.push(stats.badDate+' with a missing or invalid date');
+  if(stats.badAmt) warn.push(stats.badAmt+' with a missing or invalid amount');
+  if(stats.noSupplier) warn.push(stats.noSupplier+' with no supplier');
+  if(stats.badLink) warn.push(stats.badLink+' with a link that does not start with http(s)://');
+  if(warn.length) msg+='\n\nNeeds attention:\n  - '+warn.join('\n  - ');
+  alert(msg);
 }
 
 function _pjnlSet(i,key,val){ _ensurePjnl(); if(state.pjnlDraft[i]) state.pjnlDraft[i][key]=val; }
@@ -11122,6 +11262,7 @@ function postPurJnl(){
       vatMode: vatIncl?'incl':(vatVendor?'excl':'none'),
       amtExcl:excl, vatAmt:vat, total,
       classId:r.classId||'', status:'posted', journalId:null,
+      link:(r.link||'').trim(),
     };
     state.documents.push(d);
     _postDocToGL(d);
