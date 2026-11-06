@@ -510,7 +510,7 @@
 <div class="main-wrap">
 <div class="top-bar no-print">
   <span class="top-bar-filename no-file" id="top-bar-filename">No file loaded</span>
-  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.9.0</span>
+  <span style="font-size:11px;color:var(--ink-light);font-family:var(--mono);margin-left:10px;white-space:nowrap">v13.0.10.0</span>
 </div>
 <main>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="onFileLoaded(event)">
@@ -1648,7 +1648,7 @@
           </label>
         </div>
         <div style="overflow-x:auto">
-          <table id="pjnl-table" style="min-width:1100px">
+          <table id="pjnl-table" style="min-width:1260px">
             <thead><tr>
               <th style="width:28px"><input type="checkbox" id="pjnl-select-all" onchange="_pjnlSelectAll(this.checked)" style="cursor:pointer"></th>
               <th style="width:100px">Date</th>
@@ -1657,6 +1657,7 @@
               <th>Description</th>
               <th style="width:150px">Document Link</th>
               <th style="width:130px">Account</th>
+              <th style="width:150px">Paid From</th>
               <th style="width:100px">Class</th>
               <th class="num" style="width:110px">Amount (R)</th>
               <th class="num" style="width:80px" id="pjnl-vat-header">VAT (R)</th>
@@ -1708,7 +1709,7 @@
         <table style="width:100%">
           <thead><tr>
             <th style="width:28px"><input type="checkbox" id="pjnl-posted-select-all" onchange="_pjnlPostedSelectAll(this.checked)" style="cursor:pointer"></th>
-            <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th>
+            <th>Ref</th><th>Date</th><th>Contact</th><th>Description</th><th>Account</th><th>Paid From</th>
             <th class="num">Excl.</th><th class="num">VAT</th><th class="num">Total</th><th>Document</th>
           </tr></thead>
           <tbody id="pjnl-posted-body"></tbody>
@@ -2885,7 +2886,9 @@ function renameCOA(idx,newName){
   (state.documents||[]).forEach(doc=>{
     if(doc.accountName===oldName) doc.accountName=newName;
     if(doc.bankAccountName===oldName) doc.bankAccountName=newName;
+    if(doc.paidFrom===oldName) doc.paidFrom=newName;
   });
+  (state.pjnlDraft||[]).forEach(r=>{ if(r.paidFrom===oldName) r.paidFrom=newName; });
 
   acc.name=newName;
   renderCOA();
@@ -9367,7 +9370,9 @@ function renderCashbookLines(){
       ? `<span style="color:var(--ink-light);font-size:11px">${memoCur}</span>`
       : `<input type="text" value="${memoCur.replace(/"/g,'&quot;')}" placeholder="—" style="width:100%;font-size:11px;padding:2px 4px;border:1px solid var(--rule);border-radius:3px" onblur="setLineMemo('${cb.id}','${line.id}',this.value)">`;
 
-    const statusBadge = line.posted
+    const statusBadge = line.docId
+      ? `<span title="Created from a Purchases Journal bill" style="font-size:10px;background:#dbeafe;color:#1e40af;border-radius:3px;padding:1px 5px">Bill</span>`
+      : line.posted
       ? `<span style="font-size:10px;background:#d4edda;color:#155724;border-radius:3px;padding:1px 5px">Posted</span>`
       : allocated
         ? `<span style="font-size:10px;background:#fff3cd;color:#856404;border-radius:3px;padding:1px 5px">Ready</span>`
@@ -9377,19 +9382,26 @@ function renderCashbookLines(){
 
     const dateDisp = line.date?line.date.split('-').reverse().join('/'):'—';
 
-    const actions = line.posted
+    const actions = line.docId
+      ? `<span style="font-size:10px;color:var(--ink-light)">Undo in Purchases Journal</span>`
+      : line.posted
       ? `<button class="btn btn-ghost" style="font-size:10px;padding:2px 6px;color:#c0392b" onclick="undoSinglePost('${cb.id}','${line.id}')">Undo</button>`
       : `<button class="btn btn-ghost" style="font-size:10px;padding:2px 6px" onclick="openEditCashbookLine('${cb.id}','${line.id}')">Edit</button>
          <button class="btn btn-ghost" style="font-size:10px;padding:2px 6px" onclick="openSplitModal('${line.id}')">Split</button>
          <button style="font-size:10px;padding:2px 6px;border:none;background:none;cursor:pointer;color:#c0392b" onclick="deleteCashbookLine('${cb.id}','${line.id}')">✕</button>`;
 
+    let descTag='';
+    if(line.docId) descTag = line.bankConfirmed
+      ? ' <span title="Matched to a bank statement line" style="font-size:10px;color:#166534">&#10003; bank-confirmed</span>'
+      : ' <span title="No bank statement line has matched this yet" style="font-size:10px;color:#b45309">no bank match yet</span>';
+    else if(line.dupNote) descTag = ' <span title="'+_pjnlEsc(line.dupNote)+'" style="font-size:10px;color:#c0392b;font-weight:600">&#9888; possible duplicate</span>';
     const rowBg   = !isPostedTab && !allocated ? 'background:#fffbf0;' : '';
     const selBg   = _cblSelected.has(line.id) ? 'background:#e8f4ff;' : '';
 
     return `<tr style="border-bottom:1px solid var(--rule);${rowBg}${selBg}">
       <td style="padding:5px 8px;text-align:center">${cbCell}</td>
       <td style="padding:5px 8px;white-space:nowrap;font-family:var(--mono);font-size:11px">${dateDisp}</td>
-      <td style="padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(line.description||'').replace(/"/g,'&quot;')}">${line.description||''}</td>
+      <td style="padding:5px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(line.description||'').replace(/"/g,'&quot;')}">${line.description||''}${descTag}</td>
       <td style="padding:5px 6px;min-width:110px">${payeeCell}</td>
       <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:${(line.moneyIn||0)>0?'#155724':'var(--ink-light)'}">${(line.moneyIn||0)>0?fmtAmt2(line.moneyIn):''}</td>
       <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:${(line.moneyOut||0)>0?'#c0392b':'var(--ink-light)'}">${(line.moneyOut||0)>0?fmtAmt2(line.moneyOut):''}</td>
@@ -9770,6 +9782,7 @@ function _postLine(cb, line){
 function undoSinglePost(cbId, lineId){
   const cb=state.cashbooks.find(c=>c.id===cbId); if(!cb) return;
   const line=(cb.lines||[]).find(l=>l.id===lineId); if(!line) return;
+  if(line.docId){ alert('This line was created from a bill in the Purchases Journal. Undo it there (Posted tab).'); return; }
   _undoLine(line);
   renderCashbookLines();
 }
@@ -9777,15 +9790,16 @@ function undoSinglePost(cbId, lineId){
 // ── Bulk: Undo ──
 function applyBulkUndo(){
   const cb=state.cashbooks.find(c=>c.id===_cblCashbookId); if(!cb) return;
-  let undone=0;
+  let undone=0, docSkipped=0;
   [..._cblSelected].forEach(lineId=>{
     const line=(cb.lines||[]).find(l=>l.id===lineId);
     if(!line||!line.posted) return;
+    if(line.docId){ docSkipped++; return; }
     _undoLine(line); undone++;
   });
   _cblSelected.clear();
   renderCashbookLines();
-  if(undone) alert(`Reversed ${undone} posting${undone!==1?'s':''}.`);
+  if(undone||docSkipped) alert((undone?`Reversed ${undone} posting${undone!==1?'s':''}.`:'')+(docSkipped?`${undone?'\n':''}${docSkipped} line(s) came from Purchases Journal bills and were left as is. Undo those in the Purchases Journal (Posted tab).`:''));
 }
 
 function _undoLine(line){
@@ -9940,8 +9954,9 @@ function importCashbookCSV(event){
     const firstField = lines[0].split(',')[0].trim().toLowerCase().replace(/^"|"$/g,'');
     if(firstField === 'date') startRow = 1;
 
-    let imported = 0, skipped = 0;
+    let imported = 0, skipped = 0, reimported = 0, matched = 0, flagged = 0;
     if(!cb.lines) cb.lines = [];
+    const parsed = [];
 
     for(let i = startRow; i < lines.length; i++){
       const raw = lines[i];
@@ -9972,24 +9987,71 @@ function importCashbookCSV(event){
       const moneyIn  = amount > 0 ? amount : 0;
       const moneyOut = amount < 0 ? Math.abs(amount) : 0;
 
+      parsed.push({i, isoDate, rawDesc, moneyIn, moneyOut});
+    }
+
+    // ── Duplicate protection ──────────────────────────────────────────────
+    const keyOf = p => p.isoDate+'|'+p.rawDesc.toLowerCase().trim()+'|'+(Math.round(p.moneyIn*100))+'|'+(Math.round(p.moneyOut*100));
+    const lineKey = l => (l.date||'')+'|'+(l.descriptionKey||(l.description||'').toLowerCase().trim())+'|'+Math.round((l.moneyIn||0)*100)+'|'+Math.round((l.moneyOut||0)*100);
+    // (1) Same statement imported twice: count what is already here (own lines, and
+    //     statement lines that were matched to a bill) and only import the excess.
+    const have = {};
+    cb.lines.forEach(l=>{
+      if(l.docId){ if(l.bankKey) have[l.bankKey]=(have[l.bankKey]||0)+1; }
+      else { const k=lineKey(l); have[k]=(have[k]||0)+1; }
+    });
+    const seen = {}, fresh = [];
+    parsed.forEach(p=>{
+      const k = keyOf(p); seen[k]=(seen[k]||0)+1;
+      if(seen[k] <= (have[k]||0)) reimported++; else fresh.push(p);
+    });
+    // (2) Statement payment vs a bill already entered from a document:
+    //     same amount, money out, within 3 days, bill line not yet bank-confirmed.
+    const dayNum = iso => { const m=(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? Date.UTC(+m[1],+m[2]-1,+m[3])/86400000 : NaN; };
+    const docLines = cb.lines.filter(l=>l.docId && !l.bankConfirmed);
+    const candOf = new Map(), claimants = new Map();
+    fresh.forEach(p=>{
+      const c = [];
+      if(p.moneyOut>0) docLines.forEach(l=>{
+        if(Math.abs((l.moneyOut||0)-p.moneyOut)<0.005 && Math.abs(dayNum(l.date)-dayNum(p.isoDate))<=3) c.push(l);
+      });
+      candOf.set(p,c);
+      c.forEach(l=>claimants.set(l,(claimants.get(l)||[]).concat(p)));
+    });
+    fresh.forEach(p=>{
+      const c = candOf.get(p)||[];
+      if(c.length===1 && claimants.get(c[0]).length===1){
+        const l=c[0];
+        l.bankConfirmed=true; l.reconciled=true; l.bankKey=keyOf(p); l.bankDate=p.isoDate; l.bankDesc=p.rawDesc;
+        matched++;
+        return;
+      }
       cb.lines.push({
-        id: 'ln_'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,5),
-        date: isoDate,
-        description: rawDesc,
-        descriptionKey: rawDesc.toLowerCase().trim(),
+        id: 'ln_'+Date.now()+'_'+p.i+'_'+Math.random().toString(36).slice(2,5),
+        date: p.isoDate,
+        description: p.rawDesc,
+        descriptionKey: p.rawDesc.toLowerCase().trim(),
         memo: '',
-        moneyIn, moneyOut,
+        moneyIn: p.moneyIn, moneyOut: p.moneyOut,
         splits: [],
         reconciled: false,
         posted: false,
-        journalId: null
+        journalId: null,
+        dupNote: c.length ? 'Imported, but it may duplicate a bill already entered from a document: '+c.map(l=>(l.description||'')+' ('+l.date+')').join('; ')+'. Delete this line if it is the same payment.' : undefined
       });
+      if(c.length) flagged++;
       imported++;
-    }
+    });
 
     // Reset file input so same file can be re-imported if needed
     event.target.value = '';
-    alert(`Import complete: ${imported} lines imported${skipped>0?', '+skipped+' skipped':''}.`);
+    let msg = `Import complete: ${imported} line${imported===1?'':'s'} imported`;
+    if(skipped>0) msg += `, ${skipped} skipped (could not be read)`;
+    msg += '.';
+    if(reimported>0) msg += `\n\n${reimported} line${reimported===1?'':'s'} already in this cashbook (same date, description and amount) were not imported again.`;
+    if(matched>0) msg += `\n\n${matched} statement line${matched===1?'':'s'} matched ${matched===1?'a bill':'bills'} already entered from a document (same amount, within 3 days) and ${matched===1?'was':'were'} not imported. ${matched===1?'That bill is':'Those bills are'} now marked bank-confirmed.`;
+    if(flagged>0) msg += `\n\n${flagged} line${flagged===1?'':'s'} imported but flagged as a possible duplicate of a document bill (ambiguous match). Look for the red warning on the line.`;
+    alert(msg);
     renderCashbookLines();
   };
   reader.readAsText(file);
@@ -10490,8 +10552,10 @@ function unpostDoc(id){
     state.pjnlDraft.unshift({
       id:'pjr_'+uid(), date:d.date, docNo:d.docNo||'',
       contact:d.contact||'', desc:d.description||'',
-      account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||'')
+      account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||''),
+      link:d.link||'', paidFrom:d.paidFrom||PJ_CRED
     });
+    _removeDocCashLine(d.id);
     // Remove from documents — it's now a draft row again
     state.documents = state.documents.filter(x=>x.id!==id);
     // Navigate to Purchases Journal draft tab
@@ -10555,7 +10619,7 @@ function _postDocToGL(d){
     // Dr Expense [/ Dr VAT Input] / Cr Creditors
     lines.push({account:d.accountName,   debit:d.amtExcl,  credit:0});
     if(d.vatAmt>0 && vatAcct) lines.push({account:vatAcct, debit:d.vatAmt, credit:0});
-    lines.push({account:arAp,            debit:0,           credit:d.total});
+    lines.push({account:d.paidFrom||arAp, debit:0,           credit:d.total});
   } else if(d.type==='supplierreturn'){
     // Dr Creditors / Cr Expense [/ Cr VAT Input reversal]
     lines.push({account:arAp,            debit:d.total,    credit:0});
@@ -10805,12 +10869,14 @@ function _pjnlUndoSelected(){
   ensureClient(); _ensureDocs(); _ensurePjnl();
   const ids = [...document.querySelectorAll('#pjnl-posted-body input[type="checkbox"]:checked')].map(function(cb){return cb.dataset.id;});
   if(!ids.length){ alert('Tick at least one bill to undo.'); return; }
-  if(!confirm('Undo '+ids.length+' selected bill'+( ids.length===1?'':'s')+'? Their GL entries will be reversed and they will return to draft.')) return;
+  const _confirmed=ids.filter(function(id){var c=_docCashLine(id);return c&&c.line.bankConfirmed;}).length;
+  if(!confirm('Undo '+ids.length+' selected bill'+( ids.length===1?'':'s')+'? Their GL entries will be reversed and they will return to draft.'+(_confirmed?'\n\n'+_confirmed+' of them already matched a bank statement line. Undoing removes the cashbook line; that bank line will need to be re-imported.':''))) return;
   ids.forEach(function(id){
     var d = (state.documents||[]).find(function(x){return x.id===id;}); if(!d) return;
     if(d.journalId){ state.transactions=(state.transactions||[]).filter(function(t){return t.id!==d.journalId;}); d.journalId=null; }
     d.status='draft';
-    state.pjnlDraft.unshift({id:'pjr_'+uid(), date:d.date, docNo:d.docNo||'', contact:d.contact||'', desc:d.description||'', account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||''), link:d.link||''});
+    state.pjnlDraft.unshift({id:'pjr_'+uid(), date:d.date, docNo:d.docNo||'', contact:d.contact||'', desc:d.description||'', account:d.accountName||'', classId:d.classId||'', amount:String(d.amtExcl||d.total||''), link:d.link||'', paidFrom:d.paidFrom||PJ_CRED});
+    _removeDocCashLine(d.id);
     state.documents=state.documents.filter(function(x){return x.id!==id;});
   });
   _pjnlSwitchTab('draft');
@@ -10982,9 +11048,9 @@ function _renderPjnlPosted(){
   if(tab) tab.textContent = anyFilter
     ? 'Posted ('+docs.length+' of '+all.length+')'
     : 'Posted ('+all.length+')';
-  if(!all.length){ tbody.innerHTML='<tr><td colspan="10" class="empty">No posted bills yet.</td></tr>';
+  if(!all.length){ tbody.innerHTML='<tr><td colspan="11" class="empty">No posted bills yet.</td></tr>';
     const tot=document.getElementById('pjnl-posted-totals'); if(tot) tot.innerHTML=''; return; }
-  if(!docs.length){ tbody.innerHTML='<tr><td colspan="10" class="empty">No bills match the current filters.</td></tr>';
+  if(!docs.length){ tbody.innerHTML='<tr><td colspan="11" class="empty">No bills match the current filters.</td></tr>';
     const tot=document.getElementById('pjnl-posted-totals'); if(tot) tot.innerHTML=''; return; }
   const vatVendor = !!state.client.vatVendor;
   let sumExcl=0, sumVat=0, sumTotal=0;
@@ -11002,6 +11068,7 @@ function _renderPjnlPosted(){
       '<td>'+(_pjnlEsc(d.contact)||'&mdash;')+'</td>'+
       '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(_pjnlEsc(d.description)||'&mdash;')+'</td>'+
       '<td style="font-size:12px;color:var(--ink-light)">'+(d.accountName||'&mdash;')+'</td>'+
+      '<td style="font-size:12px;color:var(--ink-light)">'+(_pjnlEsc(d.paidFrom)||'Creditors')+'</td>'+
       '<td class="num">'+fmtAmt2(d.amtExcl||0)+'</td>'+
       '<td class="num">'+(vatVendor?fmtAmt2(d.vatAmt||0):'&mdash;')+'</td>'+
       '<td class="num" style="font-weight:600">'+fmtAmt2(d.total||0)+'</td>'+
@@ -11027,7 +11094,7 @@ function renderPurJnlView(){
 function addPurJnlRow(){
   _ensurePjnl();
   const id = 'pjr_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-  state.pjnlDraft.push({id, date:'', docNo:'', contact:'', desc:'', account:'', classId:'', amount:'', link:''});
+  state.pjnlDraft.push({id, date:'', docNo:'', contact:'', desc:'', account:'', classId:'', amount:'', link:'', paidFrom:PJ_CRED});
   renderPurJnlTable();
 }
 
@@ -11075,6 +11142,7 @@ function renderPurJnlTable(){
       <td><input type="text" value="${_pjnlEsc(r.desc)}" oninput="_pjnlSet(${i},'desc',this.value)" placeholder="Description" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px"></td>
       <td><div style="display:flex;align-items:center;gap:4px"><input type="text" value="${_pjnlEsc(r.link||'')}" oninput="_pjnlSet(${i},'link',this.value.trim())" onblur="renderPurJnlTable()" placeholder="Paste link" style="flex:1;min-width:0;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px">${_pjnlLinkAnchor(r.link)}</div></td>
       <td><select onchange="_pjnlSet(${i},'account',this.value)" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px">${acctOpts.replace(`value="${r.account}"`,`value="${r.account}" selected`)}</select></td>
+      <td><select onchange="_pjnlSet(${i},'paidFrom',this.value)" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px">${_pjnlPaidOpts(r.paidFrom)}</select></td>
       <td>${classes.length&&state.client.multiClass?`<select onchange="_pjnlSet(${i},'classId',this.value)" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px">${classOpts.replace(`value="${r.classId}"`,`value="${r.classId}" selected`)}</select>`:'—'}</td>
       <td><input type="number" value="${r.amount}" oninput="_pjnlSet(${i},'amount',this.value)" onblur="renderPurJnlTable()" placeholder="0.00" step="0.01" style="width:100%;height:28px;border:1px solid var(--rule);border-radius:3px;font-size:12px;padding:0 4px;text-align:right;font-family:var(--mono)"></td>
       <td style="display:${showVat?'':'none'}"><span style="font-family:var(--mono);font-size:12px">${fmtAmt2(vat)}</span></td>
@@ -11088,6 +11156,44 @@ function renderPurJnlTable(){
   const inclEl=document.getElementById('pjnl-total-incl');if(inclEl)inclEl.textContent=fmtR(totalIncl);
   const sa=document.getElementById('pjnl-select-all');
   if(sa) sa.checked = state.pjnlDraft.length>0 && state.pjnlDraft.every(r=>_pjnlChecked.has(r.id));
+}
+
+// ── Purchases Journal: Paid From (source of funds) ─────────────────────────
+const PJ_CRED='__creditors__';
+function _pjnlCashAccts(){ return (state.accounts||[]).filter(a=>a.cat==='Cash and Cash Equivalents').map(a=>a.name).sort((a,b)=>a.localeCompare(b)); }
+function _pjnlPaidOpts(sel){
+  const cur=sel||PJ_CRED;
+  let h='<option value="'+PJ_CRED+'"'+(cur===PJ_CRED?' selected':'')+'>Creditors (unpaid)</option>';
+  _pjnlCashAccts().forEach(n=>{ h+='<option value="'+_pjnlEsc(n)+'"'+(cur===n?' selected':'')+'>'+_pjnlEsc(n)+'</option>'; });
+  return h;
+}
+// Find the cashbook line (if any) created from a posted bill
+function _docCashLine(docId){
+  for(const cb of (state.cashbooks||[])){
+    const line=(cb.lines||[]).find(l=>l.docId===docId);
+    if(line) return {cb,line};
+  }
+  return null;
+}
+function _removeDocCashLine(docId){
+  (state.cashbooks||[]).forEach(cb=>{ if(cb.lines) cb.lines=cb.lines.filter(l=>l.docId!==docId); });
+}
+// Add a posted, money-out line to the cashbook linked to the bill's Paid From account
+function _addDocCashLine(d){
+  const cb=(state.cashbooks||[]).find(c=>c.cceAccountName===d.paidFrom);
+  if(!cb) return false;
+  if(!cb.lines) cb.lines=[];
+  const gross=Math.round((d.total||0)*100)/100;
+  const desc=(d.contact||'')+(d.description&&d.description!==d.docNo?' — '+d.description:'')+(d.docNo?' ('+d.docNo+')':'');
+  const split={accountName:d.accountName, amount:gross, vatEnabled:false, vatBoxNo:null, vatInclusive:true};
+  if(d.classId) split.classId=d.classId;
+  cb.lines.push({
+    id:'ln_'+uid(), date:d.date, description:desc, descriptionKey:desc.toLowerCase().trim(),
+    payee:d.contact||'', memo:'', moneyIn:0, moneyOut:gross, splits:[split],
+    reconciled:false, posted:true, journalId:d.journalId||null,
+    docId:d.id, bankConfirmed:false
+  });
+  return true;
 }
 
 // ── Purchases Journal: CSV import, document links ──────────────────────────
@@ -11145,7 +11251,7 @@ function _importPurJnlCSVText(text){
   const required=['date','supplier','supplier ref','description','amount'];
   const missing=required.filter(n=>col(n)===-1);
   if(missing.length){ alert('The CSV is missing required column(s): '+missing.join(', ')+'.\n\nExpected headers: Date, Supplier, Supplier Ref, Description, Account, Amount, Document Link.'); return; }
-  const cDate=col('date'), cSup=col('supplier'), cRef=col('supplier ref'), cDesc=col('description'), cAmt=col('amount'), cAcc=col('account'), cLink=col('document link');
+  const cDate=col('date'), cSup=col('supplier'), cRef=col('supplier ref'), cDesc=col('description'), cAmt=col('amount'), cAcc=col('account'), cLink=col('document link'), cPaid=col('paid from');
   const get=(r,c)=>(c>-1&&r[c]!=null)?String(r[c]).trim():'';
 
   const acctMap={}; state.accounts.forEach(a=>{ acctMap[a.name.toLowerCase()]=a.name; });
@@ -11154,7 +11260,8 @@ function _importPurJnlCSVText(text){
   // Remove untouched blank placeholder rows so the import starts clean
   state.pjnlDraft = state.pjnlDraft.filter(r=>r.date||r.docNo||r.contact||r.desc||r.account||r.amount||r.link);
 
-  const stats={rows:0, newSuppliers:[], badDate:0, badAmt:0, noSupplier:0, acctNotFound:0, badLink:0};
+  const stats={rows:0, newSuppliers:[], badDate:0, badAmt:0, noSupplier:0, acctNotFound:0, badLink:0, badPaid:0};
+  const cashMap={}; _pjnlCashAccts().forEach(n=>{ cashMap[n.toLowerCase()]=n; });
   const added=[];
   for(let k=1;k<rows.length;k++){
     const r=rows[k];
@@ -11191,12 +11298,17 @@ function _importPurJnlCSVText(text){
     // account (must exist in this client's chart)
     let acc=get(r,cAcc), accName='';
     if(acc){ accName=acctMap[acc.toLowerCase()]||''; if(!accName) stats.acctNotFound++; }
+    // paid from (optional; blank / Creditors = unpaid bill)
+    let paid=get(r,cPaid), paidFrom=PJ_CRED;
+    if(paid && !/^creditors?(\s*\(unpaid\))?$/i.test(paid)){
+      if(cashMap[paid.toLowerCase()]) paidFrom=cashMap[paid.toLowerCase()]; else stats.badPaid++;
+    }
     // link
     const link=get(r,cLink);
     if(link && !/^https?:\/\//i.test(link)) stats.badLink++;
     added.push({
       id:'pjr_'+uid()+'_'+k, date:iso, docNo:get(r,cRef), contact:sup, desc:get(r,cDesc),
-      account:accName, classId:'', amount:isNaN(amtNum)?'':amtNum.toFixed(2), link:link
+      account:accName, classId:'', amount:isNaN(amtNum)?'':amtNum.toFixed(2), link:link, paidFrom:paidFrom
     });
     stats.rows++;
   }
@@ -11216,6 +11328,7 @@ function _importPurJnlCSVText(text){
   const warn=[];
   if(dups) warn.push(dups+' duplicate'+(dups===1?'':'s')+' (supplier + ref already exists) — highlighted in red');
   if(stats.acctNotFound) warn.push(stats.acctNotFound+' with an account not found in this client\'s chart — left blank');
+  if(stats.badPaid) warn.push(stats.badPaid+' with a Paid From that is not a Cash and Cash Equivalents account — set to Creditors');
   if(stats.badDate) warn.push(stats.badDate+' with a missing or invalid date');
   if(stats.badAmt) warn.push(stats.badAmt+' with a missing or invalid amount');
   if(stats.noSupplier) warn.push(stats.noSupplier+' with no supplier');
@@ -11234,8 +11347,9 @@ function postPurJnl(){
   if(_pjnlChecked.size===0){ alert('Please tick at least one row to post.'); return; }
   const vatIncl = document.getElementById('pjnl-vat-incl')?.checked;
   const vatVendor = !!state.client.vatVendor;
-  let posted=0, skipped=0;
+  let posted=0, skipped=0, noCashbook=0, toCash=0;
   const _pjnlPosted = new Set();
+  const _cashNames=new Set(_pjnlCashAccts());
   state.pjnlDraft.forEach(r=>{
     if(!_pjnlChecked.has(r.id)) return;
     if(!r.date||!r.contact||!r.account){ skipped++; return; }
@@ -11263,9 +11377,11 @@ function postPurJnl(){
       amtExcl:excl, vatAmt:vat, total,
       classId:r.classId||'', status:'posted', journalId:null,
       link:(r.link||'').trim(),
+      paidFrom:(r.paidFrom&&r.paidFrom!==PJ_CRED&&_cashNames.has(r.paidFrom))?r.paidFrom:'',
     };
     state.documents.push(d);
     _postDocToGL(d);
+    if(d.paidFrom){ toCash++; if(!_addDocCashLine(d)) noCashbook++; }
     _pjnlPosted.add(r.id);
     posted++;
   });
@@ -11273,6 +11389,7 @@ function postPurJnl(){
   state.pjnlDraft = state.pjnlDraft.filter(r=>!_pjnlPosted.has(r.id));
   _pjnlChecked.clear();
   if(skipped) alert(`${skipped} row(s) skipped — check that date, contact and account are filled in, and that any supplier ref is not a duplicate for that contact.`);
+  if(noCashbook) alert(`${noCashbook} bill(s) were paid from an account that has no cashbook. They are posted to the ledger but will not appear in a cashbook. Create a cashbook for that account (Settings > Cashbooks) if you want them there.`);
   if(posted){
     // Switch to Posted tab so the user can immediately see what was posted
     _pjnlSwitchTab('posted');
